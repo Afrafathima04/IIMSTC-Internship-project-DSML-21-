@@ -1,0 +1,206 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.top-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:1.5rem;padding:1rem 1.25rem;background:var(--color-background-secondary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary)}
+.search-wrap{flex:1;min-width:180px}
+.search-wrap input{width:100%;padding:7px 12px;font-size:13px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);outline:none}
+.search-wrap input:focus{border-color:var(--color-border-secondary)}
+.filter-group{display:flex;gap:8px;flex-wrap:wrap}
+.filter-btn{padding:5px 12px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:20px;background:transparent;color:var(--color-text-secondary);cursor:pointer;transition:all .15s}
+.filter-btn.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.metrics-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.5rem}
+.metric-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.85rem 1rem}
+.metric-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.metric-val{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.metric-sub{font-size:11px;color:var(--color-text-tertiary);margin-top:2px}
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.chart-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem}
+.chart-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:.75rem}
+.papers-section{}
+.papers-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.papers-header h3{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.count-badge{font-size:12px;color:var(--color-text-secondary)}
+.paper-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem;cursor:pointer;transition:border-color .15s}
+.paper-card:hover{border-color:var(--color-border-secondary)}
+.paper-card.expanded{border-color:#185FA5}
+.paper-top{display:flex;align-items:flex-start;gap:12px}
+.paper-id{width:34px;height:34px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:#0C447C;flex-shrink:0}
+.paper-meta{flex:1;min-width:0}
+.paper-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.paper-authors{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.type-badge{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.badge-survey{background:#EEEDFE;color:#3C3489}
+.badge-slr{background:#E1F5EE;color:#085041}
+.badge-original{background:#FAECE7;color:#712B13}
+.badge-mapping{background:#FAEEDA;color:#633806}
+.paper-obj{font-size:12px;color:var(--color-text-secondary);margin-top:4px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.paper-obj.full{-webkit-line-clamp:unset;overflow:visible}
+.paper-details{margin-top:.75rem;border-top:0.5px solid var(--color-border-tertiary);padding-top:.75rem;display:none}
+.paper-card.expanded .paper-details{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.detail-item{}
+.detail-label{font-size:11px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.detail-val{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+.accuracy-pill{display:inline-block;background:#EAF3DE;color:#27500A;font-size:11px;padding:2px 8px;border-radius:4px;margin-top:4px;font-weight:500}
+.related-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:.5rem}
+.related-tag{font-size:11px;background:#E6F1FB;color:#185FA5;padding:2px 7px;border-radius:20px}
+.no-results{text-align:center;padding:2rem;color:var(--color-text-secondary);font-size:14px}
+.tech-bar{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.tech-name{font-size:12px;color:var(--color-text-secondary);width:80px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tech-track{flex:1;height:8px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden}
+.tech-fill{height:100%;border-radius:4px;background:#378ADD;transition:width .4s}
+.yr-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.yr-label{font-size:12px;color:var(--color-text-secondary);width:36px;flex-shrink:0}
+.yr-track{flex:1;height:10px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden}
+.yr-fill{height:100%;border-radius:4px;background:#1D9E75;transition:width .4s}
+.yr-count{font-size:11px;color:var(--color-text-tertiary);width:14px;text-align:right}
+</style>
+
+<div style="padding:1rem 0">
+
+<div class="metrics-row" id="metricsRow"></div>
+
+<div class="top-bar">
+  <div class="search-wrap"><input type="text" id="searchInput" placeholder="Search papers, methods, datasets..."></div>
+  <div class="filter-group" id="filterBtns"></div>
+</div>
+
+<div class="content-grid">
+  <div class="chart-card">
+    <div class="chart-title">Models & techniques frequency</div>
+    <div id="techBars"></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Papers by year</div>
+    <div id="yearBars"></div>
+  </div>
+</div>
+
+<div class="papers-section">
+  <div class="papers-header">
+    <h3>Papers</h3>
+    <span class="count-badge" id="countBadge">8 papers</span>
+  </div>
+  <div id="papersContainer"></div>
+</div>
+
+</div>
+
+<script>
+const papers = [
+  {id:'P1',authors:'Shaik et al.',year:2023,type:'Survey Paper',obj:'Reviews SA & opinion mining in education across 4 levels (document, sentence, entity, aspect). Examines annotation techniques and AI methodologies.',dataset:'150+ reviewed studies; Coursera reviews, SFU corpus, Amazon edu datasets, Twitter edu feedback.',models:'SVM, Random Forest, Naive Bayes, XGBoost, CNN, LSTM, BiLSTM, BERT, RoBERTa, Transformer ensembles',accuracy:'RF: F1=98.01% & 99.43% (aspect ID); ABSA: Acc=80.67%; Twitter edu: Acc=96.99%',limitations:'No new model proposed. Annotation tools not adapted to educational language. Multilingual SA unexplored.',future:'Education-specific annotation tools & lexicons. Real-time feedback pipelines. Multilingual SA.',related:'P4, P7, P8'},
+  {id:'P2',authors:'Kastrati et al.',year:2021,type:'Systematic Mapping Study',obj:'Maps NLP/DL/ML research (2015–2020) on student feedback SA in learning platforms using PRISMA framework.',dataset:'92 primary studies from 612 results across IEEE Xplore, ACM, Springer, Elsevier, Scopus, Web of Science.',models:'NB, SVM, Decision Tree, Logistic Regression, LSTM, CNN, GRU, BERT, hybrid combinations',accuracy:'Best: Acc=98.29%, F1=96%. Typical: F1=83–88%, Precision~90%, Recall~78%',limitations:'No model or experiment. No standardised datasets. Emotional detection underdeveloped.',future:'Full SLRs from mapping themes. Standardised shared datasets. Emotional detection focus.',related:'P3, P6, P4'},
+  {id:'P3',authors:'Dalipi et al.',year:2022,type:'Systematic Literature Review',obj:'Reviews SA techniques on MOOC platforms (Coursera, edX, Udemy), examining how student feedback has been processed.',dataset:'PRISMA SLR; Coursera, edX, Udemy reviews, MOOC comment corpora. English-language only.',models:'SVM (dominant), Decision Tree, CNN, LSTM, BERT, LDA for topic modelling',accuracy:'SVM: F1>80%; Coursera ABSA: F1=86.13%; LDA negative topic precision: 85.71%',limitations:'English-only inclusion. No cross-platform comparison. No real-time feedback analysis.',future:'Multilingual MOOC SA. Longitudinal learner behaviour analysis. Real-time feedback loops.',related:'P4, P7, P8'},
+  {id:'P4',authors:'Abdi et al.',year:2023,type:'Original Research',obj:'Proposes DTLP – a novel BiLSTM + linguistic knowledge model for fine-grained ABSA of student feedback in intelligent edu systems.',dataset:'Custom student survey dataset (course quality, teaching, assignments) + existing benchmark. Manually annotated.',models:'DTLP (BiLSTM + POS, negation, LDA), CNN, SVM, Random Forest, BERT (baselines)',accuracy:'DTLP: Acc=88.78%, F1=83.27%; CNN baseline: Acc=71.43%; SVM baseline: Acc=86.01%',limitations:'Negation & discourse markers problematic. Domain-specific dataset. Limited generalisation.',future:'Larger diverse datasets. Transfer learning for cross-institutional use. Real-time monitoring.',related:'P7, P8'},
+  {id:'P5',authors:'Hua et al.',year:2024,type:'Systematic Literature Review',obj:'Largest SLR of ABSA research to date – tracks trends across domains, datasets, and solution paradigms over ~20 years.',dataset:'727 studies from 8,550 results; SemEval, Yelp, Amazon, MAMS, Twitter.',models:'Full trajectory: SVM → LSTM/BiLSTM/GRU/CNN → BERT/RoBERTa/XLNet → GPT-3.5/4, Llama-2, Flan-T5, DeBERTa, PaLM',accuracy:'Fine-tuned RoBERTa > GPT-3.5 & GPT-4 by ~20% on AE & ASC. GPT-3.5 > GPT-4 on opinion extraction by ~15%.',limitations:'Heavy SemEval bias. Education domain underrepresented. Inconsistent LLM benchmarking.',future:'Diversify ABSA to education & healthcare. Multilingual ABSA datasets. Standardised LLM benchmarking.',related:'P7, P8'},
+  {id:'P6',authors:'Grimalt-Álvaro & Usart',year:2024,type:'Systematic Literature Review',obj:'Reviews SA applied to formative assessment in higher education – covering techniques, visualisation tools & pedagogical frameworks.',dataset:'PRISMA SLR (2010–2022); HE discussion forums, teacher evaluation forms, peer assessment, self-evaluation comments.',models:'SVM, VADER, SentiStrength (lexicon-based), BERT, hybrid rule-based + ML',accuracy:'No fixed aggregate %. Accuracy improves with emotional features. Human raters improve annotation validity.',limitations:'Scarce student messages limit training data. SA not adapted to academic language. No teacher visualisation tools.',future:'Emotional state modelling. Teacher dashboard development. Peer & self-assessment SA.',related:'P7, P8'},
+  {id:'P7',authors:'Deshpande et al.',year:2025,type:'Original Research',obj:'Applies and compares ML classifiers on faculty feedback (student evaluations of teaching staff) to identify best-performing model.',dataset:'Faculty evaluation forms from educational institutions. NLP + POS tagging preprocessing.',models:'Random Forest (best), SVM, Naive Bayes, Decision Tree, MLP, SGD. BERT & RoBERTa as future candidates.',accuracy:'RF: Acc=91%, Precision=94%, Recall=85%, F1=89%',limitations:'Traditional ML lacks contextual depth. MLP & SGD underperform. Institution-specific data limits generalisation.',future:'Fine-tune BERT, RoBERTa, EduBERT. Severity detection. Real-time AI feedback.',related:'P4, P5, P8'},
+  {id:'P8',authors:'Morris et al.',year:2025,type:'Original Research',obj:'Fine-tunes RoBERTa & Longformer in iTELL intelligent textbook platform to auto-score student summaries and deliver real-time formative feedback.',dataset:'4,690 summaries from 3 HE institutions (2018–2021); 101 source texts.',models:'RoBERTa (fine-tuned), Longformer (fine-tuned), PCA. vs ROUGE, BLEU, sentence-embedding baselines.',accuracy:'Content model robust out-of-domain. Pearson r=0.78–0.81 vs human raters. PCA: 82% variance (content).',limitations:'Wording model not robust out-of-domain. LLM decisions not explainable. Limited to textbook summarisation.',future:'Explainable AI (XAI) for scoring. Expand to other writing/learning contexts.',related:'P2, P3, P6'}
+];
+
+const typeClasses = {'Survey Paper':'badge-survey','Systematic Literature Review':'badge-slr','Systematic Mapping Study':'badge-mapping','Original Research':'badge-original'};
+let activeFilter = 'All', searchTerm = '', expandedId = null;
+
+function getBadgeClass(t){return typeClasses[t]||'badge-survey'}
+
+function renderMetrics(data){
+  const types = [...new Set(data.map(p=>p.type))];
+  const years = [...new Set(data.map(p=>p.year))].sort();
+  const html = `
+    <div class="metric-card"><div class="metric-label">Total papers</div><div class="metric-val">${data.length}</div><div class="metric-sub">in this review</div></div>
+    <div class="metric-card"><div class="metric-label">Paper types</div><div class="metric-val">${types.length}</div><div class="metric-sub">distinct types</div></div>
+    <div class="metric-card"><div class="metric-label">Year range</div><div class="metric-val">${years[0]}–${years[years.length-1]}</div><div class="metric-sub">${years.length} different years</div></div>
+    <div class="metric-card"><div class="metric-label">Original research</div><div class="metric-val">${data.filter(p=>p.type==='Original Research').length}</div><div class="metric-sub">empirical papers</div></div>
+  `;
+  document.getElementById('metricsRow').innerHTML = html;
+}
+
+function renderFilters(){
+  const types = ['All','Survey Paper','Systematic Literature Review','Systematic Mapping Study','Original Research'];
+  document.getElementById('filterBtns').innerHTML = types.map(t=>`<button class="filter-btn${activeFilter===t?' active':''}" onclick="setFilter('${t}')">${t}</button>`).join('');
+}
+
+function setFilter(t){activeFilter=t;renderFilters();renderPapers();renderCharts();}
+
+function getFiltered(){
+  let d = papers;
+  if(activeFilter!=='All') d = d.filter(p=>p.type===activeFilter);
+  if(searchTerm) d = d.filter(p=>{
+    const s = searchTerm.toLowerCase();
+    return p.authors.toLowerCase().includes(s)||p.obj.toLowerCase().includes(s)||p.models.toLowerCase().includes(s)||p.dataset.toLowerCase().includes(s)||p.accuracy.toLowerCase().includes(s)||String(p.year).includes(s);
+  });
+  return d;
+}
+
+function renderPapers(){
+  const data = getFiltered();
+  document.getElementById('countBadge').textContent = `${data.length} paper${data.length!==1?'s':''}`;
+  if(!data.length){document.getElementById('papersContainer').innerHTML='<div class="no-results">No papers match your search</div>';return;}
+  document.getElementById('papersContainer').innerHTML = data.map(p=>{
+    const isExp = expandedId===p.id;
+    return `<div class="paper-card${isExp?' expanded':''}" onclick="toggleCard('${p.id}')">
+      <div class="paper-top">
+        <div class="paper-id">${p.id}</div>
+        <div class="paper-meta">
+          <div class="paper-title-row">
+            <span class="paper-authors">${p.authors} · ${p.year}</span>
+            <span class="type-badge ${getBadgeClass(p.type)}">${p.type}</span>
+          </div>
+          <div class="paper-obj${isExp?' full':''}">${p.obj}</div>
+        </div>
+      </div>
+      <div class="paper-details">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Dataset</div><div class="detail-val">${p.dataset}</div></div>
+          <div class="detail-item"><div class="detail-label">Models & techniques</div><div class="detail-val">${p.models}</div></div>
+          <div class="detail-item"><div class="detail-label">Results</div><div class="detail-val">${p.accuracy}<br><span class="accuracy-pill">${extractTopAcc(p.accuracy)}</span></div></div>
+          <div class="detail-item"><div class="detail-label">Key limitations</div><div class="detail-val">${p.limitations}</div></div>
+          <div class="detail-item" style="grid-column:1/-1"><div class="detail-label">Future work</div><div class="detail-val">${p.future}</div></div>
+          <div class="detail-item" style="grid-column:1/-1"><div class="detail-label">Related to</div><div class="related-tags">${p.related.split(',').map(r=>`<span class="related-tag">${r.trim()}</span>`).join('')}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function extractTopAcc(acc){
+  const m = acc.match(/(\d{2,3}(?:\.\d+)?%|r=0\.\d+)/);
+  return m ? 'Top: '+m[0] : 'See details';
+}
+
+function toggleCard(id){expandedId = expandedId===id ? null : id; renderPapers();}
+
+function renderCharts(){
+  const data = getFiltered();
+  const techCount = {};
+  const techList = ['BERT','SVM','LSTM','Random Forest','CNN','BiLSTM','RoBERTa','Transformer','GPT','LDA','Naive Bayes'];
+  techList.forEach(t=>{techCount[t]=data.filter(p=>p.models.toLowerCase().includes(t.toLowerCase())).length;});
+  const sorted = Object.entries(techCount).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxT = sorted[0]?.[1]||1;
+  document.getElementById('techBars').innerHTML = sorted.map(([name,cnt])=>`
+    <div class="tech-bar">
+      <span class="tech-name">${name}</span>
+      <div class="tech-track"><div class="tech-fill" style="width:${Math.round(cnt/maxT*100)}%"></div></div>
+      <span style="font-size:11px;color:var(--color-text-tertiary);min-width:14px">${cnt}</span>
+    </div>`).join('');
+
+  const yearCount = {};
+  data.forEach(p=>{yearCount[p.year]=(yearCount[p.year]||0)+1;});
+  const ySorted = Object.entries(yearCount).sort((a,b)=>a[0]-b[0]);
+  const maxY = Math.max(...Object.values(yearCount),1);
+  document.getElementById('yearBars').innerHTML = ySorted.map(([yr,cnt])=>`
+    <div class="yr-row">
+      <span class="yr-label">${yr}</span>
+      <div class="yr-track"><div class="yr-fill" style="width:${Math.round(cnt/maxY*100)}%"></div></div>
+      <span class="yr-count">${cnt}</span>
+    </div>`).join('');
+}
+
+document.getElementById('searchInput').addEventListener('input',e=>{searchTerm=e.target.value;renderPapers();renderCharts();});
+
+renderMetrics(papers);
+renderFilters();
+renderPapers();
+renderCharts();
+</script>

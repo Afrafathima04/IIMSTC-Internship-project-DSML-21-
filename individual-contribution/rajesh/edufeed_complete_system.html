@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:#0F172A;color:#F8FAFC;padding:16px;min-height:100vh;font-size:13px;}
+
+:root{
+  --bg:#0F172A;--card:#1E293B;--card2:#263347;--accent:#6366F1;
+  --blue:#38BDF8;--amber:#F59E0B;--green:#10B981;--pink:#EC4899;
+  --red:#EF4444;--muted:#94A3B8;--border:#334155;
+}
+
+.header{margin-bottom:16px;}
+.header h1{font-size:16px;font-weight:900;color:#38BDF8;letter-spacing:.5px;}
+.header p{font-size:10px;color:#94A3B8;margin-top:3px;}
+
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.tab{padding:6px 14px;border-radius:20px;font-size:10.5px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;transition:.2s;}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.tab:hover:not(.active){border-color:var(--accent);color:var(--accent);}
+
+.panel{display:none;}.panel.active{display:block;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:14px;transition:.2s;}
+.card:hover{background:var(--card2);border-color:var(--accent);}
+.card h3{font-size:12px;font-weight:700;margin-bottom:5px;}
+.card p{font-size:10px;color:var(--muted);line-height:1.6;}
+.tag{font-size:8px;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:5px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:8.5px;font-weight:700;margin:2px 2px 0 0;}
+
+/* ── GRID LAYOUTS ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.g1{display:grid;grid-template-columns:1fr;gap:10px;}
+
+/* ── FLOW ── */
+.flow-wrap{display:flex;flex-direction:column;gap:0;}
+.fbox{background:var(--card);border:1.5px solid var(--border);border-radius:8px;padding:12px 16px;transition:.2s;}
+.fbox:hover{background:var(--card2);transform:translateX(4px);}
+.farrow{text-align:center;padding:3px 0;font-size:15px;color:var(--border);}
+.farrow span{font-size:9px;color:var(--accent);font-style:italic;display:block;}
+
+/* ── MODEL CARDS ── */
+.mcard{background:var(--card);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;transition:.2s;cursor:default;}
+.mcard:hover{background:var(--card2);transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.4);}
+.mcard-head{padding:10px 14px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:8px;}
+.mcard-body{padding:10px 14px;}
+.mcard-body p{font-size:9.5px;color:var(--muted);line-height:1.6;margin-bottom:8px;}
+.mcard-body code{display:block;background:#0F172A;border-radius:4px;padding:5px 8px;font-size:9px;color:var(--green);font-family:monospace;}
+.spec-row{display:flex;justify-content:space-between;align-items:center;font-size:9px;padding:3px 0;border-top:1px solid #1E293B;}
+.spec-row span:first-child{color:var(--muted);}
+
+/* ── TIMELINE ── */
+.phase{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;}
+.phase-num{min-width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:2px;}
+.phase-content{flex:1;}
+.phase-content h3{font-size:12px;font-weight:700;margin-bottom:4px;}
+.phase-content p{font-size:10px;color:var(--muted);line-height:1.6;}
+.phase-line{width:2px;height:16px;margin-left:15px;background:var(--border);}
+
+/* ── LLM COMPARE TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:10px;}
+.tbl th{background:#1a2744;color:var(--blue);font-size:9.5px;font-weight:700;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+.tbl tr:hover td{background:var(--card2);}
+.tbl tr:last-child td{border-bottom:none;}
+.stars{color:var(--amber);}
+
+/* ── SECTION TITLE ── */
+.sec-title{font-size:11px;font-weight:800;color:var(--blue);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+.chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:8.5px;font-weight:700;margin:1px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎓 EDU-FEED — AI-Driven Intelligent Student Feedback Analysis & Insight Generation System</h1>
+  <p>Complete System Architecture · NLP Models · LLMs · Training/Testing Pipeline · Real-Time Dashboard</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="show('overview',this)">🏗️ System Overview</div>
+  <div class="tab" onclick="show('nlp',this)">🧠 NLP Models</div>
+  <div class="tab" onclick="show('llm',this)">🤖 LLMs for Dashboard</div>
+  <div class="tab" onclick="show('train',this)">📊 Training & Testing</div>
+  <div class="tab" onclick="show('realtime',this)">⚡ Real-Time Pipeline</div>
+</div>
+
+<!-- ══════════════════ TAB 1: OVERVIEW ══════════════════ -->
+<div class="panel active" id="overview">
+  <div class="flow-wrap">
+
+    <div class="fbox" style="border-left:4px solid #6366F1;">
+      <div class="tag" style="color:#6366F1;">Layer 1 — Input</div>
+      <h3>📋 Student Feedback Collection</h3>
+      <p style="font-size:10px;color:var(--muted);margin-top:4px;">Anonymous form submission (web/mobile) · Course + Faculty selection · Free-text + Rating inputs · Real-time ingestion via REST API / WebSocket</p>
+    </div>
+    <div class="farrow">↓<span>Anonymized token assigned, PII stripped</span></div>
+
+    <div class="fbox" style="border-left:4px solid #38BDF8;">
+      <div class="tag" style="color:#38BDF8;">Layer 2 — Preprocessing</div>
+      <h3>🧹 Text Cleaning & NLP Preprocessing</h3>
+      <p style="font-size:10px;color:var(--muted);margin-top:4px;">Tokenization · Stopword removal · Lemmatization · NER-based PII stripping · Language detection · Noise removal</p>
+      <div style="margin-top:6px;">
+        <span class="chip" style="background:rgba(56,189,248,.15);color:#38BDF8;">spaCy</span>
+        <span class="chip" style="background:rgba(56,189,248,.15);color:#38BDF8;">NLTK</span>
+        <span class="chip" style="background:rgba(56,189,248,.15);color:#38BDF8;">HuggingFace Tokenizers</span>
+      </div>
+    </div>
+    <div class="farrow">↓<span>Clean token sequence ready for models</span></div>
+
+    <div class="g3" style="margin:4px 0;">
+      <div class="fbox" style="border-left:4px solid #10B981;">
+        <div class="tag" style="color:#10B981;">Layer 3a</div>
+        <h3>😊 Sentiment Analysis</h3>
+        <p style="font-size:10px;color:var(--muted);margin-top:4px;">Positive / Negative / Neutral per feedback. Aspect-level sentiment (teaching, content, pace).</p>
+        <div style="margin-top:6px;"><span class="chip" style="background:rgba(16,185,129,.15);color:#10B981;">BERT</span><span class="chip" style="background:rgba(16,185,129,.15);color:#10B981;">RoBERTa</span></div>
+      </div>
+      <div class="fbox" style="border-left:4px solid #F59E0B;">
+        <div class="tag" style="color:#F59E0B;">Layer 3b</div>
+        <h3>🏷️ Topic Modeling</h3>
+        <p style="font-size:10px;color:var(--muted);margin-top:4px;">Extract themes: syllabus, faculty clarity, assignments, lab, exam pattern.</p>
+        <div style="margin-top:6px;"><span class="chip" style="background:rgba(245,158,11,.15);color:#F59E0B;">LDA</span><span class="chip" style="background:rgba(245,158,11,.15);color:#F59E0B;">BERTopic</span></div>
+      </div>
+      <div class="fbox" style="border-left:4px solid #EC4899;">
+        <div class="tag" style="color:#EC4899;">Layer 3c</div>
+        <h3>📌 Keyword & Intent</h3>
+        <p style="font-size:10px;color:var(--muted);margin-top:4px;">Key concern extraction, urgency detection, suggestion vs complaint classification.</p>
+        <div style="margin-top:6px;"><span class="chip" style="background:rgba(236,72,153,.15);color:#EC4899;">KeyBERT</span><span class="chip" style="background:rgba(236,72,153,.15);color:#EC4899;">Zero-shot</span></div>
+      </div>
+    </div>
+    <div class="farrow">↓<span>Structured analysis results</span></div>
+
+    <div class="fbox" style="border-left:4px solid #6366F1;">
+      <div class="tag" style="color:#6366F1;">Layer 4 — Insight Generation (LLM)</div>
+      <h3>🤖 LLM-Powered Summary & Recommendation Engine</h3>
+      <p style="font-size:10px;color:var(--muted);margin-top:4px;">Aggregated NLP outputs fed into LLM → generates human-readable summaries, flags critical issues, suggests improvements. Real-time streaming response to dashboard.</p>
+      <div style="margin-top:6px;">
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">Gemini 1.5 Flash</span>
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">Claude Haiku</span>
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">GPT-4o mini</span>
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">Llama 3 (local)</span>
+      </div>
+    </div>
+    <div class="farrow">↓<span>Live insights pushed to dashboard</span></div>
+
+    <div class="fbox" style="border-left:4px solid #10B981;">
+      <div class="tag" style="color:#10B981;">Layer 5 — Dashboard</div>
+      <h3>📊 Real-Time Admin / Faculty Dashboard</h3>
+      <p style="font-size:10px;color:var(--muted);margin-top:4px;">Live sentiment trend charts · Word clouds · Topic breakdown · LLM-generated insight cards · Alert system for urgent issues · Anonymous — no individual traceability</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ TAB 2: NLP MODELS ══════════════════ -->
+<div class="panel" id="nlp">
+
+  <div class="sec-title">🧠 Sentiment Analysis Models</div>
+  <div class="g3" style="margin-bottom:16px;">
+
+    <div class="mcard">
+      <div class="mcard-head" style="background:rgba(99,102,241,.12);color:#6366F1;">⭐ BERT <span style="font-size:9px;font-weight:400;color:var(--muted);margin-left:4px;">Recommended</span></div>
+      <div class="mcard-body">
+        <p>Bidirectional Encoder — understands context in both directions. Fine-tune on student feedback dataset for highly accurate sentiment classification.</p>
+        <code>bert-base-uncased
+→ fine-tuned on edu feedback
+→ 3-class: pos/neg/neutral</code>
+        <div class="spec-row"><span>Speed</span><span style="color:#F59E0B;">Medium</span></div>
+        <div class="spec-row"><span>Accuracy</span><span style="color:#10B981;">High ★★★★★</span></div>
+        <div class="spec-row"><span>Use for</span><span style="color:#38BDF8;">Core sentiment</span></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <div class="mcard-head" style="background:rgba(56,189,248,.12);color:#38BDF8;">🚀 RoBERTa</div>
+      <div class="mcard-body">
+        <p>Robustly optimized BERT — trained on more data, better for noisy real-world text like informal student feedback.</p>
+        <code>roberta-base
+→ better on informal text
+→ aspect-level sentiment</code>
+        <div class="spec-row"><span>Speed</span><span style="color:#F59E0B;">Medium</span></div>
+        <div class="spec-row"><span>Accuracy</span><span style="color:#10B981;">Very High ★★★★★</span></div>
+        <div class="spec-row"><span>Use for</span><span style="color:#38BDF8;">Aspect sentiment</span></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <div class="mcard-head" style="background:rgba(16,185,129,.12);color:#10B981;">⚡ DistilBERT</div>
+      <div class="mcard-body">
+        <p>60% smaller, 40% faster than BERT with 97% of its performance. Best for real-time processing where speed matters.</p>
+        <code>distilbert-base-uncased
+→ real-time inference
+→ low latency pipeline</code>
+        <div class="spec-row"><span>Speed</span><span style="color:#10B981;">Fast ⚡</span></div>
+        <div class="spec-row"><span>Accuracy</span><span style="color:#F59E0B;">Good ★★★★☆</span></div>
+        <div class="spec-row"><span>Use for</span><span style="color:#38BDF8;">Real-time stream</span></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <div class="mcard-head" style="background:rgba(245,158,11,.12);color:#F59E0B;">📊 VADER</div>
+      <div class="mcard-body">
+        <p>Rule-based sentiment — no training needed. Great as a fast fallback or for quick scoring before deep model runs.</p>
+        <code>from vaderSentiment.vaderSentiment
+  import SentimentIntensityAnalyzer
+# No training, instant result</code>
+        <div class="spec-row"><span>Speed</span><span style="color:#10B981;">Instant ⚡⚡</span></div>
+        <div class="spec-row"><span>Accuracy</span><span style="color:#F59E0B;">Moderate ★★★☆☆</span></div>
+        <div class="spec-row"><span>Use for</span><span style="color:#38BDF8;">Baseline / fallback</span></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <div class="mcard-head" style="background:rgba(236,72,153,.12);color:#EC4899;">🎯 ABSA Model</div>
+      <div class="mcard-body">
+        <p>Aspect-Based Sentiment Analysis — detects sentiment per aspect: "teaching was great but syllabus is outdated."</p>
+        <code>pyabsa or
+fine-tuned BERT on aspects:
+[teaching, syllabus, pace,
+ assignments, exams]</code>
+        <div class="spec-row"><span>Speed</span><span style="color:#F59E0B;">Medium</span></div>
+        <div class="spec-row"><span>Accuracy</span><span style="color:#10B981;">High ★★★★★</span></div>
+        <div class="spec-row"><span>Use for</span><span style="color:#38BDF8;">Deep insights</span></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <div class="mcard-head" style="background:rgba(99,102,241,.12);color:#6366F1;">🔤 TextBlob</div>
+      <div class="mcard-body">
+        <p>Simple lexicon-based NLP. Polarity + subjectivity score. Good for early prototyping and baseline comparisons.</p>
+        <code>from textblob import TextBlob
+blob = TextBlob("feedback text")
+blob.sentiment.polarity
+# Range: -1 to +1</code>
+        <div class="spec-row"><span>Speed</span><span style="color:#10B981;">Instant</span></div>
+        <div class="spec-row"><span>Accuracy</span><span style="color:#EF4444;">Basic ★★☆☆☆</span></div>
+        <div class="spec-row"><span>Use for</span><span style="color:#38BDF8;">Prototype only</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-title">🏷️ Topic Modeling & Keyword Extraction</div>
+  <div class="g3" style="margin-bottom:16px;">
+
+    <div class="mcard">
+      <div class="mcard-head" style="background:rgba(245,158,11,.12);color:#F59E0B;">⭐ BERTopic <span style="font-size:9px;font-weight:400;color:var(--muted);margin-left:4px;">Best Pick</span></div>
+      <div class="mcard-body">
+        <p>Uses BERT embeddings + clustering to find coherent topics. Far better than LDA for short feedback texts.</p>
+        <code>from bertopic import BERTopic
+model = BERTopic(language="english")
+topics, probs = model.fit_transform(docs)</code>
+        <div class="spec-row"><span>Best for</span><span style="color:#38BDF8;">Short texts, edu feedback</span></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <div class="mcard-head" style="background:rgba(56,189,248,.12);color:#38BDF8;">📈 LDA</div>
+      <div class="mcard-body">
+        <p>Latent Dirichlet Allocation — classical topic modeling. Works well with larger corpora. Use when you have 1000+ feedbacks.</p>
+        <code>from gensim.models import LdaModel
+# Best with large corpus
+# Tune num_topics carefully</code>
+        <div class="spec-row"><span>Best for</span><span style="color:#38BDF8;">Large datasets</span></div>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <div class="mcard-head" style="background:rgba(16,185,129,.12);color:#10B981;">🔑 KeyBERT</div>
+      <div class="mcard-body">
+        <p>Extract most relevant keywords and key phrases using BERT similarity. Perfect for generating word clouds and tagging.</p>
+        <code>from keybert import KeyBERT
+kw_model = KeyBERT()
+kw_model.extract_keywords(doc,
+  keyphrase_ngram_range=(1,2))</code>
+        <div class="spec-row"><span>Best for</span><span style="color:#38BDF8;">Keywords, word cloud</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-title">🔍 Supporting NLP Tools</div>
+  <div class="g3">
+    <div class="card"><div class="tag" style="color:#6366F1;">NER / PII Removal</div><h3>spaCy</h3><p>Named entity recognition — auto-removes names, emails, roll numbers from free text before storage.</p></div>
+    <div class="card"><div class="tag" style="color:#38BDF8;">Zero-Shot Classification</div><h3>facebook/bart-large-mnli</h3><p>Classify feedback into custom categories (complaint, suggestion, praise) without any training data.</p></div>
+    <div class="card"><div class="tag" style="color:#10B981;">Embeddings</div><h3>sentence-transformers</h3><p>all-MiniLM-L6-v2 — fast semantic embeddings for clustering similar feedbacks and finding duplicates.</p></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ TAB 3: LLMs ══════════════════ -->
+<div class="panel" id="llm">
+
+  <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:10.5px;color:#94A3B8;line-height:1.7;">
+    <strong style="color:#F8FAFC;">LLM Role in EDU-FEED:</strong> NLP models extract structured data (sentiment scores, topics, keywords). The LLM takes these structured outputs and generates <strong style="color:#38BDF8">human-readable summaries, alert narratives, and actionable recommendations</strong> for the dashboard — in real time. LLM is the last mile, not the whole pipeline.
+  </div>
+
+  <div class="sec-title">🏆 Recommended LLMs — Real-Time Dashboard</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>LLM</th>
+        <th>Provider</th>
+        <th>Speed</th>
+        <th>Cost</th>
+        <th>Best For</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:#F59E0B;">⭐ Gemini 1.5 Flash</strong></td>
+        <td><span style="color:#94A3B8;">Google</span></td>
+        <td><span style="color:#10B981;">⚡ Very Fast</span></td>
+        <td><span style="color:#10B981;">Free tier / cheap</span></td>
+        <td>Real-time summaries, streaming, large context (1M tokens)</td>
+        <td><span class="badge" style="background:rgba(16,185,129,.2);color:#10B981;">TOP PICK</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:#38BDF8;">Claude Haiku 3.5</strong></td>
+        <td><span style="color:#94A3B8;">Anthropic</span></td>
+        <td><span style="color:#10B981;">⚡ Very Fast</span></td>
+        <td><span style="color:#10B981;">Low cost</span></td>
+        <td>Fast structured insight generation, JSON output, reliable formatting</td>
+        <td><span class="badge" style="background:rgba(56,189,248,.2);color:#38BDF8;">EXCELLENT</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:#6366F1;">GPT-4o mini</strong></td>
+        <td><span style="color:#94A3B8;">OpenAI</span></td>
+        <td><span style="color:#10B981;">Fast</span></td>
+        <td><span style="color:#F59E0B;">Low–medium</span></td>
+        <td>High quality summaries, function calling for structured data extraction</td>
+        <td><span class="badge" style="background:rgba(99,102,241,.2);color:#6366F1;">GREAT</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:#EC4899;">Llama 3.1 8B</strong></td>
+        <td><span style="color:#94A3B8;">Meta (local)</span></td>
+        <td><span style="color:#F59E0B;">Medium</span></td>
+        <td><span style="color:#10B981;">FREE (self-hosted)</span></td>
+        <td>Privacy-first deployment, no data leaves institution servers</td>
+        <td><span class="badge" style="background:rgba(236,72,153,.2);color:#EC4899;">PRIVACY PICK</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:#10B981;">Mistral 7B</strong></td>
+        <td><span style="color:#94A3B8;">Mistral AI</span></td>
+        <td><span style="color:#10B981;">Fast</span></td>
+        <td><span style="color:#10B981;">Free (local/API)</span></td>
+        <td>Lightweight, fast, runs on modest hardware, good for college servers</td>
+        <td><span class="badge" style="background:rgba(16,185,129,.2);color:#10B981;">BUDGET PICK</span></td>
+      </tr>
+      <tr>
+        <td><strong style="color:#94A3B8;">Gemma 2 9B</strong></td>
+        <td><span style="color:#94A3B8;">Google (local)</span></td>
+        <td><span style="color:#F59E0B;">Medium</span></td>
+        <td><span style="color:#10B981;">FREE</span></td>
+        <td>Google's open model, good balance of quality and speed locally</td>
+        <td><span class="badge" style="background:rgba(148,163,184,.15);color:#94A3B8;">ALTERNATIVE</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:14px;" class="sec-title">📝 LLM Prompt Strategy for EDU-FEED</div>
+  <div class="g2">
+    <div class="card" style="border-left:3px solid #6366F1;">
+      <div class="tag" style="color:#6366F1;">Prompt Type 1</div>
+      <h3>Summary Generation</h3>
+      <p style="margin-bottom:8px;">Feed aggregated NLP results to LLM to generate weekly/real-time summary for faculty.</p>
+      <code style="background:#0F172A;border-radius:4px;padding:8px;font-size:9px;color:#10B981;font-family:monospace;display:block;line-height:1.6;">
+"Given: 47 feedbacks this week.
+Sentiment: 62% positive, 28% negative.
+Top topics: [syllabus pace, lab clarity]
+Key concerns: [3 urgent flags]
+
+Generate a 3-point actionable summary
+for the faculty. Be concise."</code>
+    </div>
+    <div class="card" style="border-left:3px solid #EF4444;">
+      <div class="tag" style="color:#EF4444;">Prompt Type 2</div>
+      <h3>Alert Generation</h3>
+      <p style="margin-bottom:8px;">When sentiment drops below threshold or urgent keywords detected, LLM drafts an alert.</p>
+      <code style="background:#0F172A;border-radius:4px;padding:8px;font-size:9px;color:#10B981;font-family:monospace;display:block;line-height:1.6;">
+"URGENT: 8 feedbacks in last 2 hours
+flagged as high-distress for course
+CS401. Topics: exam stress, unclear
+instructions. Draft a 2-line alert
+for the department head."</code>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ TAB 4: TRAINING & TESTING ══════════════════ -->
+<div class="panel" id="train">
+
+  <div class="sec-title">📊 Dataset Strategy</div>
+  <div class="g3" style="margin-bottom:14px;">
+    <div class="card" style="border-left:3px solid #6366F1;">
+      <div class="tag" style="color:#6366F1;">Primary Dataset</div>
+      <h3>Custom Collected</h3>
+      <p>Collect 500–2000 real student feedback samples from your institution. Manually label sentiment (pos/neg/neutral) and topics. Most important for accuracy.</p>
+      <span class="badge" style="background:rgba(99,102,241,.15);color:#6366F1;">Best for fine-tuning</span>
+    </div>
+    <div class="card" style="border-left:3px solid #38BDF8;">
+      <div class="tag" style="color:#38BDF8;">Public Datasets</div>
+      <h3>Pre-training Base</h3>
+      <p>SST-2 (Stanford Sentiment), Amazon Reviews, Rate My Professor dataset (Kaggle) — use for initial fine-tuning before domain-specific data.</p>
+      <span class="badge" style="background:rgba(56,189,248,.15);color:#38BDF8;">Free on HuggingFace / Kaggle</span>
+    </div>
+    <div class="card" style="border-left:3px solid #10B981;">
+      <div class="tag" style="color:#10B981;">Augmentation</div>
+      <h3>Synthetic Data</h3>
+      <p>Use LLM (GPT/Gemini) to generate synthetic labeled feedback samples when real data is scarce. Paraphrase existing samples for variety.</p>
+      <span class="badge" style="background:rgba(16,185,129,.15);color:#10B981;">Expand small datasets</span>
+    </div>
+  </div>
+
+  <div class="sec-title">⚙️ Training Pipeline</div>
+  <div class="flow-wrap" style="margin-bottom:14px;">
+    <div class="phase">
+      <div class="phase-num" style="background:rgba(99,102,241,.2);color:#6366F1;">1</div>
+      <div class="phase-content">
+        <h3>Data Collection & Annotation</h3>
+        <p>Collect raw feedback → label sentiment (3-class) → label aspects (teaching, syllabus, lab, exam) → label intent (complaint/suggestion/praise). Use Label Studio or Doccano for annotation.</p>
+      </div>
+    </div>
+    <div class="phase-line"></div>
+    <div class="phase">
+      <div class="phase-num" style="background:rgba(56,189,248,.2);color:#38BDF8;">2</div>
+      <div class="phase-content">
+        <h3>Preprocessing</h3>
+        <p>Clean text → remove PII → tokenize using HuggingFace tokenizers → encode with BERT tokenizer → split 70% train / 15% val / 15% test.</p>
+      </div>
+    </div>
+    <div class="phase-line"></div>
+    <div class="phase">
+      <div class="phase-num" style="background:rgba(245,158,11,.2);color:#F59E0B;">3</div>
+      <div class="phase-content">
+        <h3>Fine-Tuning</h3>
+        <p>Load pre-trained BERT/RoBERTa from HuggingFace → add classification head → fine-tune on domain data using AdamW optimizer, learning rate 2e-5, 3–5 epochs. Use Google Colab (free GPU) or Kaggle Notebooks.</p>
+      </div>
+    </div>
+    <div class="phase-line"></div>
+    <div class="phase">
+      <div class="phase-num" style="background:rgba(16,185,129,.2);color:#10B981;">4</div>
+      <div class="phase-content">
+        <h3>Evaluation</h3>
+        <p>Measure: Accuracy, Precision, Recall, F1-Score per class. Use confusion matrix. Target F1 ≥ 0.85 before deployment. Compare against VADER and TextBlob baselines.</p>
+      </div>
+    </div>
+    <div class="phase-line"></div>
+    <div class="phase">
+      <div class="phase-num" style="background:rgba(236,72,153,.2);color:#EC4899;">5</div>
+      <div class="phase-content">
+        <h3>Export & Deploy</h3>
+        <p>Export model to ONNX or TorchScript for faster inference → deploy via FastAPI endpoint → integrate into the real-time pipeline.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-title">📏 Evaluation Metrics</div>
+  <div class="g3">
+    <div class="card"><div class="tag" style="color:#6366F1;">Classification</div><h3>F1-Score (Macro)</h3><p>Primary metric — balances precision and recall across all classes. Target ≥ 0.85 for production.</p></div>
+    <div class="card"><div class="tag" style="color:#38BDF8;">Topic Modeling</div><h3>Coherence Score (Cv)</h3><p>Measures topic quality for LDA/BERTopic. Higher = more meaningful topics. Target Cv ≥ 0.55.</p></div>
+    <div class="card"><div class="tag" style="color:#10B981;">System</div><h3>Latency (P95)</h3><p>95th percentile response time for real-time analysis. Target &lt;500ms per feedback for live dashboard.</p></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ TAB 5: REAL-TIME ══════════════════ -->
+<div class="panel" id="realtime">
+
+  <div class="sec-title">⚡ Real-Time Pipeline Architecture</div>
+  <div class="flow-wrap" style="margin-bottom:14px;">
+
+    <div class="fbox" style="border-left:4px solid #6366F1;">
+      <div class="tag" style="color:#6366F1;">Step 1 — Ingestion</div>
+      <h3>🌐 WebSocket / REST API</h3>
+      <p style="font-size:10px;color:var(--muted);margin-top:4px;">Student submits feedback → FastAPI backend receives it → pushes to message queue instantly. Tech: <strong style="color:#F8FAFC">FastAPI + WebSocket</strong></p>
+    </div>
+    <div class="farrow">↓<span>~10ms</span></div>
+
+    <div class="fbox" style="border-left:4px solid #38BDF8;">
+      <div class="tag" style="color:#38BDF8;">Step 2 — Message Queue</div>
+      <h3>📨 Redis Queue / Celery</h3>
+      <p style="font-size:10px;color:var(--muted);margin-top:4px;">Feedback placed in async processing queue. Handles burst submissions during end-of-semester rush without choking the ML pipeline. Tech: <strong style="color:#F8FAFC">Redis + Celery</strong></p>
+    </div>
+    <div class="farrow">↓<span>Async worker picks up</span></div>
+
+    <div class="fbox" style="border-left:4px solid #F59E0B;">
+      <div class="tag" style="color:#F59E0B;">Step 3 — ML Worker</div>
+      <h3>🧠 NLP Analysis (Async)</h3>
+      <p style="font-size:10px;color:var(--muted);margin-top:4px;">DistilBERT (fast) → sentiment score + ABSA aspects + KeyBERT keywords + BERTopic assignment. All in ~200–400ms. Tech: <strong style="color:#F8FAFC">PyTorch + ONNX runtime</strong></p>
+    </div>
+    <div class="farrow">↓<span>Structured JSON result</span></div>
+
+    <div class="fbox" style="border-left:4px solid #6366F1;">
+      <div class="tag" style="color:#6366F1;">Step 4 — LLM Insight Layer</div>
+      <h3>🤖 Gemini Flash / Haiku Streaming</h3>
+      <p style="font-size:10px;color:var(--muted);margin-top:4px;">Every N feedbacks (or on-demand), aggregated results sent to LLM → streaming response to dashboard. Triggered by: time window (every 5 min) OR threshold (every 10 new feedbacks). Tech: <strong style="color:#F8FAFC">Gemini API streaming</strong></p>
+    </div>
+    <div class="farrow">↓<span>SSE stream to frontend</span></div>
+
+    <div class="fbox" style="border-left:4px solid #10B981;">
+      <div class="tag" style="color:#10B981;">Step 5 — Dashboard Push</div>
+      <h3>📊 Live Dashboard Update</h3>
+      <p style="font-size:10px;color:var(--muted);margin-top:4px;">Server-Sent Events (SSE) push updated charts, sentiment trend, new insight cards, and alerts to the faculty/admin dashboard in real time — no page refresh needed. Tech: <strong style="color:#F8FAFC">React + SSE / Socket.io</strong></p>
+    </div>
+
+  </div>
+
+  <div class="sec-title">🛠️ Full Tech Stack</div>
+  <div class="g2">
+    <div class="card">
+      <div class="tag" style="color:#6366F1;">Backend</div>
+      <p style="line-height:2;">
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">Python</span>
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">FastAPI</span>
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">Celery</span>
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">Redis</span>
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">PostgreSQL</span>
+        <span class="chip" style="background:rgba(99,102,241,.15);color:#6366F1;">SQLAlchemy</span>
+      </p>
+    </div>
+    <div class="card">
+      <div class="tag" style="color:#38BDF8;">ML / NLP</div>
+      <p style="line-height:2;">
+        <span class="chip" style="background:rgba(56,189,248,.15);color:#38BDF8;">PyTorch</span>
+        <span class="chip" style="background:rgba(56,189,248,.15);color:#38BDF8;">HuggingFace</span>
+        <span class="chip" style="background:rgba(56,189,248,.15);color:#38BDF8;">spaCy</span>
+        <span class="chip" style="background:rgba(56,189,248,.15);color:#38BDF8;">BERTopic</span>
+        <span class="chip" style="background:rgba(56,189,248,.15);color:#38BDF8;">KeyBERT</span>
+        <span class="chip" style="background:rgba(56,189,248,.15);color:#38BDF8;">ONNX</span>
+      </p>
+    </div>
+    <div class="card">
+      <div class="tag" style="color:#10B981;">Frontend / Dashboard</div>
+      <p style="line-height:2;">
+        <span class="chip" style="background:rgba(16,185,129,.15);color:#10B981;">React.js</span>
+        <span class="chip" style="background:rgba(16,185,129,.15);color:#10B981;">Chart.js</span>
+        <span class="chip" style="background:rgba(16,185,129,.15);color:#10B981;">Socket.io</span>
+        <span class="chip" style="background:rgba(16,185,129,.15);color:#10B981;">TailwindCSS</span>
+        <span class="chip" style="background:rgba(16,185,129,.15);color:#10B981;">Recharts</span>
+      </p>
+    </div>
+    <div class="card">
+      <div class="tag" style="color:#F59E0B;">LLM / AI APIs</div>
+      <p style="line-height:2;">
+        <span class="chip" style="background:rgba(245,158,11,.15);color:#F59E0B;">Gemini 1.5 Flash</span>
+        <span class="chip" style="background:rgba(245,158,11,.15);color:#F59E0B;">Claude Haiku</span>
+        <span class="chip" style="background:rgba(245,158,11,.15);color:#F59E0B;">Ollama (local)</span>
+        <span class="chip" style="background:rgba(245,158,11,.15);color:#F59E0B;">LangChain</span>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function show(id,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>
