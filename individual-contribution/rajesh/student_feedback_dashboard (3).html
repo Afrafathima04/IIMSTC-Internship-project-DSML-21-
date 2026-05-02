@@ -1,0 +1,524 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --s:#6C47FF;--s2:#9B6DFF;--a:#FF6B6B;--a2:#FF9B6B;--g:#00C9A7;--y:#FFD93D;
+  --bg:#0D0B1E;--card:#16132E;--card2:#1E1A3A;--txt:#E8E4FF;--muted:#8B7FC0;
+  --border:rgba(108,71,255,0.3);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden}
+h1,h2,h3,h4{font-family:'Syne',sans-serif}
+
+.app{padding:0;position:relative}
+.bg-orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.15}
+.orb1{width:500px;height:500px;background:var(--s);top:-150px;left:-100px;animation:drift 8s ease-in-out infinite alternate}
+.orb2{width:400px;height:400px;background:var(--a);bottom:-100px;right:-80px;animation:drift 10s ease-in-out infinite alternate-reverse}
+.orb3{width:300px;height:300px;background:var(--g);top:40%;left:40%;animation:drift 12s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(30px,40px)}}
+
+.inner{position:relative;z-index:1;padding:24px}
+
+.header{text-align:center;margin-bottom:32px;padding:32px 24px}
+.header h1{font-size:clamp(28px,5vw,48px);font-weight:800;background:linear-gradient(135deg,#fff 0%,var(--s2) 50%,var(--a) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;margin-bottom:8px}
+.header p{color:var(--muted);font-size:14px}
+
+.mode-switcher{display:flex;gap:8px;justify-content:center;margin-bottom:32px}
+.mode-btn{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:12px 28px;border-radius:50px;border:none;cursor:pointer;transition:all 0.25s;letter-spacing:0.5px}
+.mode-btn.student{background:linear-gradient(135deg,var(--s),var(--s2));color:#fff;box-shadow:0 8px 24px rgba(108,71,255,0.4)}
+.mode-btn.prof{background:var(--card2);color:var(--muted);border:1px solid var(--border)}
+.mode-btn.prof.active{background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;box-shadow:0 8px 24px rgba(255,107,107,0.4)}
+.mode-btn.student.active{background:linear-gradient(135deg,var(--s),var(--s2));color:#fff}
+.mode-btn:not(.active){background:var(--card2);color:var(--muted);border:1px solid var(--border);box-shadow:none}
+
+.panel{display:none;animation:fadeUp 0.4s ease}
+.panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* STUDENT PANEL */
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;max-width:580px;margin:0 auto}
+.form-card h2{font-size:22px;font-weight:700;margin-bottom:8px;color:#fff}
+.form-card .sub{color:var(--muted);font-size:13px;margin-bottom:28px}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field.full{grid-column:1/-1}
+.field label{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase}
+.field input,.field textarea,.field select{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;resize:none;width:100%}
+.field input:focus,.field textarea:focus{border-color:var(--s2);box-shadow:0 0 0 3px rgba(108,71,255,0.2)}
+.field textarea{min-height:100px}
+
+.star-row{display:flex;gap:8px;margin-top:4px}
+.star{font-size:28px;cursor:pointer;color:var(--card2);transition:all 0.15s;filter:drop-shadow(0 0 8px transparent)}
+.star.active{color:var(--y);filter:drop-shadow(0 0 8px rgba(255,217,61,0.6))}
+
+.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--s),var(--s2));color:#fff;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;cursor:pointer;transition:all 0.25s;margin-top:8px;letter-spacing:0.5px}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(108,71,255,0.5)}
+.submit-btn:active{transform:translateY(0)}
+
+.toast{display:none;margin-top:16px;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:500;border:1px solid}
+.toast.pos{background:rgba(0,201,167,0.1);border-color:rgba(0,201,167,0.4);color:var(--g)}
+.toast.neg{background:rgba(255,107,107,0.1);border-color:rgba(255,107,107,0.4);color:var(--a)}
+
+/* LOADING OVERLAY */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(13,11,30,0.85);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.loading-overlay.show{display:flex}
+.spinner{width:40px;height:40px;border:3px solid rgba(108,71,255,0.2);border-top-color:var(--s2);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--muted);font-size:13px}
+
+/* PROF PANEL */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 16px;text-align:center}
+.stat-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:4px}
+.stat-val.purple{background:linear-gradient(135deg,var(--s2),#C89FFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-val.green{background:linear-gradient(135deg,var(--g),#80FFD8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-val.red{background:linear-gradient(135deg,var(--a),var(--a2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-val.yellow{background:linear-gradient(135deg,var(--y),#FFF08F);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-lbl{color:var(--muted);font-size:11px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase}
+
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.chart-card h4{font-size:13px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px}
+.chart-wrap{position:relative;height:220px}
+
+.reviews-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.reviews-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.reviews-card h4{font-size:13px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+.clear-btn{font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,107,107,0.3);background:rgba(255,107,107,0.08);color:var(--a);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
+.clear-btn:hover{background:rgba(255,107,107,0.18)}
+
+.review-item{padding:14px 0;border-bottom:1px solid rgba(108,71,255,0.12);display:flex;align-items:flex-start;gap:12px}
+.review-item:last-child{border-bottom:none}
+.review-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;flex-shrink:0}
+.review-body{flex:1;min-width:0}
+.review-header{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+.review-meta{font-size:11px;color:var(--muted)}
+.review-stars{color:var(--y);font-size:13px;letter-spacing:1px}
+.sentiment-badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;letter-spacing:0.3px}
+.sentiment-badge.pos{background:rgba(0,201,167,0.15);color:var(--g);border:1px solid rgba(0,201,167,0.3)}
+.sentiment-badge.neg{background:rgba(255,107,107,0.15);color:var(--a);border:1px solid rgba(255,107,107,0.3)}
+.sentiment-badge.neu{background:rgba(255,217,61,0.15);color:var(--y);border:1px solid rgba(255,217,61,0.3)}
+.review-text{color:var(--txt);font-size:13px;line-height:1.5}
+
+.empty-state{text-align:center;padding:40px;color:var(--muted)}
+.empty-state .icon{font-size:40px;margin-bottom:12px;opacity:0.4}
+.empty-state p{font-size:14px}
+
+.sentiment-legend{display:flex;gap:16px;margin-bottom:8px;font-size:12px;color:var(--muted)}
+.leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px}
+
+.live-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--g);background:rgba(0,201,167,0.1);border:1px solid rgba(0,201,167,0.25);border-radius:20px;padding:3px 10px;margin-left:8px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+
+.refresh-btn{font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
+.refresh-btn:hover{border-color:var(--s2);color:var(--txt)}
+
+@media(max-width:540px){
+  .charts-grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+}
+</style>
+
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Saving feedback...</div>
+</div>
+
+<div class="inner">
+  <div class="header">
+    <h1>Ed-Feed</h1>
+    <p>Real-time course feedback &amp; sentiment analytics</p>
+  </div>
+
+  <div class="mode-switcher">
+    <button class="mode-btn student active" onclick="switchMode('student')">Student Mode</button>
+    <button class="mode-btn prof" onclick="switchMode('prof')">Professor Mode</button>
+  </div>
+
+  <!-- STUDENT PANEL -->
+  <div class="panel active" id="panel-student">
+    <div class="form-card">
+      <h2>Share Your Feedback</h2>
+      <p class="sub">Your identity will be anonymized before professors see your review.</p>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>Your Name</label>
+          <input id="f-name" type="text" placeholder="e.g. Sonu">
+        </div>
+        <div class="field">
+          <label>Roll Number</label>
+          <input id="f-roll" type="text" placeholder="e.g. 5225">
+        </div>
+        <div class="field full">
+          <label>Email Address</label>
+          <input id="f-email" type="email" placeholder="you@college.edu">
+        </div>
+        <div class="field full">
+          <label>Star Rating</label>
+          <div class="star-row" id="stars">
+            <span class="star" data-v="1" onclick="setRating(1)">&#9733;</span>
+            <span class="star" data-v="2" onclick="setRating(2)">&#9733;</span>
+            <span class="star" data-v="3" onclick="setRating(3)">&#9733;</span>
+            <span class="star" data-v="4" onclick="setRating(4)">&#9733;</span>
+            <span class="star" data-v="5" onclick="setRating(5)">&#9733;</span>
+          </div>
+        </div>
+        <div class="field full">
+          <label>Your Review</label>
+          <textarea id="f-review" placeholder="Tell us about your experience with the course and professor..."></textarea>
+        </div>
+      </div>
+
+      <button class="submit-btn" onclick="submitFeedback()">Submit Feedback</button>
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+
+  <!-- PROFESSOR PANEL -->
+  <div class="panel" id="panel-prof">
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card"><div class="stat-val purple" id="s-total">—</div><div class="stat-lbl">Total Reviews</div></div>
+      <div class="stat-card"><div class="stat-val green" id="s-pos">—</div><div class="stat-lbl">Positive</div></div>
+      <div class="stat-card"><div class="stat-val red" id="s-neg">—</div><div class="stat-lbl">Negative</div></div>
+      <div class="stat-card"><div class="stat-val yellow" id="s-avg">—</div><div class="stat-lbl">Avg Rating</div></div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h4>Sentiment Distribution</h4>
+        <div class="sentiment-legend">
+          <span><span class="leg-dot" style="background:#00C9A7"></span>Positive</span>
+          <span><span class="leg-dot" style="background:#FF6B6B"></span>Negative</span>
+          <span><span class="leg-dot" style="background:#FFD93D"></span>Neutral</span>
+        </div>
+        <div class="chart-wrap"><canvas id="sentChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Rating Breakdown</h4>
+        <div class="chart-wrap"><canvas id="ratChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="reviews-card">
+      <div class="reviews-header">
+        <div style="display:flex;align-items:center;gap:8px">
+          <h4>Anonymous Reviews</h4>
+          <span class="live-badge"><span class="live-dot"></span>Live</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="refresh-btn" onclick="loadAndRender()">Refresh</button>
+          <button class="clear-btn" onclick="clearAllFeedbacks()">Clear All</button>
+        </div>
+      </div>
+      <div id="review-list">
+        <div class="empty-state">
+          <div class="icon">&#128220;</div>
+          <p>Loading reviews...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let currentRating = 0;
+let sentChart = null;
+let ratChart = null;
+let autoRefreshTimer = null;
+
+const STORAGE_KEY = 'edufeedback-reviews';
+
+const avatarColors = [
+  {bg:'rgba(108,71,255,0.2)',color:'#9B6DFF'},
+  {bg:'rgba(0,201,167,0.2)',color:'#00C9A7'},
+  {bg:'rgba(255,107,107,0.2)',color:'#FF6B6B'},
+  {bg:'rgba(255,217,61,0.2)',color:'#FFD93D'},
+  {bg:'rgba(155,109,255,0.2)',color:'#C89FFF'}
+];
+
+/* ── STORAGE HELPERS ── */
+async function loadFeedbacks() {
+  try {
+    const result = await window.storage.get(STORAGE_KEY, true);
+    return result ? JSON.parse(result.value) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+async function saveFeedbacks(feedbacks) {
+  try {
+    await window.storage.set(STORAGE_KEY, JSON.stringify(feedbacks), true);
+    return true;
+  } catch (e) {
+    console.error('Storage save failed:', e);
+    return false;
+  }
+}
+
+async function appendFeedback(entry) {
+  const existing = await loadFeedbacks();
+  existing.push(entry);
+  return saveFeedbacks(existing);
+}
+
+/* ── ANONYMIZATION ── */
+function makeInitials(name) {
+  return name.trim().split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || '??';
+}
+
+function pseudoId(name, roll) {
+  // Simple deterministic hash for display grouping (not cryptographic — no sensitive data stored)
+  const str = (name + roll).toLowerCase().replace(/\s/g,'');
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; }
+  return Math.abs(h).toString(16).slice(0,8);
+}
+
+/* ── SENTIMENT ── */
+function detectSentiment(text, rating) {
+  const s = text.toLowerCase();
+  const posWords = ['good','great','excellent','amazing','helpful','best','love','fantastic','awesome','wonderful','clear','interesting','engaging','knowledgeable','patient','thorough'];
+  const negWords = ['bad','terrible','awful','boring','confusing','hard','difficult','worst','hate','poor','unclear','slow','unhelpful','rude','waste'];
+  const neuWords = ['okay','ok','fine','average','decent','alright','fair','moderate'];
+  let score = 0;
+  posWords.forEach(w => { if (s.includes(w)) score++; });
+  negWords.forEach(w => { if (s.includes(w)) score--; });
+  neuWords.forEach(w => { if (s.includes(w)) score += 0.2; });
+  if (rating >= 4) score += 1;
+  if (rating <= 2) score -= 1;
+  if (score > 0.5) return 'Positive';
+  if (score < -0.5) return 'Negative';
+  return 'Neutral';
+}
+
+/* ── FORM ── */
+function switchMode(mode) {
+  document.getElementById('panel-student').classList.toggle('active', mode === 'student');
+  document.getElementById('panel-prof').classList.toggle('active', mode === 'prof');
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.mode-btn.' + (mode === 'student' ? 'student' : 'prof')).classList.add('active');
+  if (mode === 'prof') {
+    loadAndRender();
+    startAutoRefresh();
+  } else {
+    stopAutoRefresh();
+  }
+}
+
+function setRating(v) {
+  currentRating = v;
+  document.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('active', parseInt(s.dataset.v) <= v);
+  });
+}
+
+async function submitFeedback() {
+  const name   = document.getElementById('f-name').value.trim();
+  const roll   = document.getElementById('f-roll').value.trim();
+  const email  = document.getElementById('f-email').value.trim();
+  const review = document.getElementById('f-review').value.trim();
+
+  if (!name || !roll || !review || currentRating === 0) {
+    showToast('Please fill all fields and select a rating.', 'neg');
+    return;
+  }
+
+  const btn = document.querySelector('.submit-btn');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  showLoading('Saving your feedback...');
+
+  const sentiment = detectSentiment(review, currentRating);
+  const entry = {
+    id: Date.now() + Math.random().toString(36).slice(2,6),
+    review,
+    sentiment,
+    rating: currentRating,
+    initials: makeInitials(name),
+    pid: pseudoId(name, roll),
+    ts: new Date().toISOString()
+  };
+
+  // Try backend first, fall back to storage
+  let saved = false;
+  try {
+    const resp = await fetch('https://reclining-submersed-elude.ngrok-free.dev/predict', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, roll, email, rating: currentRating, feedback: review}),
+      signal: AbortSignal.timeout(4000)
+    });
+    const data = await resp.json();
+    entry.review = data.masked_review || review;
+    entry.sentiment = data.prediction || sentiment;
+  } catch (_) { /* backend offline — use local sentiment */ }
+
+  saved = await appendFeedback(entry);
+  hideLoading();
+
+  if (saved) {
+    showToast('Feedback submitted! Sentiment: ' + entry.sentiment, entry.sentiment !== 'Negative' ? 'pos' : 'neg');
+    resetForm();
+  } else {
+    showToast('Could not save. Please try again.', 'neg');
+  }
+
+  btn.textContent = 'Submit Feedback';
+  btn.disabled = false;
+}
+
+function resetForm() {
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-roll').value = '';
+  document.getElementById('f-email').value = '';
+  document.getElementById('f-review').value = '';
+  currentRating = 0;
+  document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+}
+
+function showToast(msg, cls) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + cls;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 4000);
+}
+
+function showLoading(txt) {
+  document.getElementById('loading-text').textContent = txt || 'Loading...';
+  document.getElementById('loading-overlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
+/* ── PROF PANEL RENDER ── */
+async function loadAndRender() {
+  const feedbacks = await loadFeedbacks();
+  renderProfPanel(feedbacks);
+}
+
+function renderProfPanel(feedbacks) {
+  const total = feedbacks.length;
+  const pos   = feedbacks.filter(f => f.sentiment === 'Positive').length;
+  const neg   = feedbacks.filter(f => f.sentiment === 'Negative').length;
+  const neu   = total - pos - neg;
+  const avgR  = total ? (feedbacks.reduce((a,f) => a + f.rating, 0) / total).toFixed(1) : '—';
+
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-pos').textContent   = total ? Math.round(pos/total*100) + '%' : '0%';
+  document.getElementById('s-neg').textContent   = total ? Math.round(neg/total*100) + '%' : '0%';
+  document.getElementById('s-avg').textContent   = avgR;
+
+  const ratings = [0,0,0,0,0];
+  feedbacks.forEach(f => { if (f.rating >= 1 && f.rating <= 5) ratings[f.rating-1]++; });
+
+  if (sentChart) sentChart.destroy();
+  if (ratChart)  ratChart.destroy();
+
+  sentChart = new Chart(document.getElementById('sentChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Positive','Negative','Neutral'],
+      datasets: [{
+        data: [pos, neg, neu],
+        backgroundColor: ['#00C9A7','#FF6B6B','#FFD93D'],
+        borderWidth: 0,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {legend: {display: false}}
+    }
+  });
+
+  ratChart = new Chart(document.getElementById('ratChart'), {
+    type: 'bar',
+    data: {
+      labels: ['1★','2★','3★','4★','5★'],
+      datasets: [{
+        label: 'Reviews',
+        data: ratings,
+        backgroundColor: ['#FF6B6B','#FF9B6B','#FFD93D','#9B6DFF','#00C9A7'],
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {legend: {display: false}},
+      scales: {
+        x: {ticks:{color:'#8B7FC0',font:{size:12}}, grid:{display:false}, border:{display:false}},
+        y: {ticks:{color:'#8B7FC0',font:{size:12},stepSize:1}, grid:{color:'rgba(108,71,255,0.1)'}, border:{display:false}}
+      }
+    }
+  });
+
+  const list = document.getElementById('review-list');
+  if (!feedbacks.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#128220;</div><p>No reviews yet. Switch to Student Mode to submit feedback.</p></div>';
+    return;
+  }
+
+  list.innerHTML = feedbacks.slice().reverse().map((f, i) => {
+    const ac    = avatarColors[i % avatarColors.length];
+    const stars = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
+    const badgeCls = f.sentiment === 'Positive' ? 'pos' : f.sentiment === 'Negative' ? 'neg' : 'neu';
+    const timeStr  = f.ts ? new Date(f.ts).toLocaleString(undefined, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="review-item">
+      <div class="review-avatar" style="background:${ac.bg};color:${ac.color}">${f.initials}</div>
+      <div class="review-body">
+        <div class="review-header">
+          <span class="review-stars">${stars}</span>
+          <span class="sentiment-badge ${badgeCls}">${f.sentiment}</span>
+          ${timeStr ? `<span class="review-meta">${timeStr}</span>` : ''}
+        </div>
+        <p class="review-text">${escHtml(f.review)}</p>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function clearAllFeedbacks() {
+  if (!confirm('Clear ALL feedback from all users? This cannot be undone.')) return;
+  showLoading('Clearing all feedback...');
+  await window.storage.set(STORAGE_KEY, JSON.stringify([]), true);
+  hideLoading();
+  loadAndRender();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── AUTO REFRESH every 10s when on prof panel ── */
+function startAutoRefresh() {
+  stopAutoRefresh();
+  autoRefreshTimer = setInterval(loadAndRender, 10000);
+}
+function stopAutoRefresh() {
+  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+}
+
+/* ── INIT ── */
+(async () => {
+  // Pre-load data silently so prof panel is instant when switched
+  await loadFeedbacks();
+})();
+</script>

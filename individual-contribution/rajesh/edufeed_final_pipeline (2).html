@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDU-FEED — Full Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f12;
+  --bg2:#13161b;
+  --bg3:#1a1e26;
+  --border:#252a35;
+  --border2:#2e3545;
+  --text:#e2e6f0;
+  --muted:#7a8299;
+  --dim:#454e63;
+  --purple:#9d95f5;
+  --purple-bg:#1e1c3a;
+  --purple-border:#332f5e;
+  --teal:#3ecf8e;
+  --teal-bg:#0e2820;
+  --teal-border:#1a4a35;
+  --amber:#f5a623;
+  --amber-bg:#281f0d;
+  --amber-border:#4a3510;
+  --blue:#5aabf5;
+  --blue-bg:#0d1e30;
+  --blue-border:#153250;
+  --green:#7ec94a;
+  --green-bg:#141f0d;
+  --green-border:#253515;
+  --red:#f56b6b;
+  --red-bg:#2a1010;
+  --red-border:#4a1a1a;
+  --coral:#f5936b;
+  --coral-bg:#281508;
+  --coral-border:#4a2510;
+  --gray:#a0a8b8;
+  --gray-bg:#161b24;
+  --gray-border:#252d3d;
+  --radius:10px;
+  --radius-sm:6px;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:13px;
+  line-height:1.5;
+  padding:24px 20px 40px;
+  max-width:960px;
+  margin:0 auto;
+}
+
+/* ── header ── */
+.header{margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.header-top{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+.header-title{font-family:'Instrument Serif',serif;font-size:22px;color:var(--text);letter-spacing:-.01em}
+.header-title em{font-style:italic;color:var(--purple)}
+.header-sub{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.04em}
+.header-meta{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.meta-pill{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;letter-spacing:.03em}
+
+/* ── shield ── */
+.shield{
+  background:var(--red-bg);
+  border:1px solid var(--red-border);
+  border-radius:var(--radius);
+  padding:10px 14px;
+  margin-bottom:20px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+}
+.shield-icon{flex-shrink:0;margin-top:1px}
+.shield-text{}
+.shield-title{font-size:11px;font-weight:600;color:var(--red);margin-bottom:3px;letter-spacing:.02em;text-transform:uppercase}
+.shield-body{font-size:11px;color:#c47a7a;line-height:1.55}
+
+/* ── phase divider ── */
+.phase-divider{
+  display:flex;align-items:center;gap:10px;
+  margin:20px 0 10px;
+}
+.pdline{flex:1;height:1px;background:var(--border)}
+.pdlabel{
+  font-size:10px;font-weight:500;color:var(--muted);
+  font-family:'DM Mono',monospace;letter-spacing:.06em;
+  text-transform:uppercase;white-space:nowrap;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:20px;padding:3px 12px;
+}
+
+/* ── row ── */
+.row{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin-bottom:2px}
+.arrow{
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:var(--dim);font-size:16px;
+  align-self:center;padding:0 2px;
+}
+
+/* ── card ── */
+.card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:11px 13px;
+  flex:1;min-width:150px;
+  cursor:pointer;
+  transition:border-color .2s, background .2s;
+  position:relative;
+}
+.card:hover{border-color:var(--border2);background:var(--bg3)}
+.card.done{border-color:#253515}
+.card.done::after{
+  content:'✓ done';
+  position:absolute;top:8px;right:10px;
+  font-size:9px;font-family:'DM Mono',monospace;
+  color:var(--green);letter-spacing:.04em;
+  background:var(--green-bg);border:1px solid var(--green-border);
+  border-radius:3px;padding:1px 5px;
+}
+
+.card-head{
+  font-size:12px;font-weight:600;color:var(--text);
+  margin-bottom:5px;display:flex;align-items:center;gap:7px;
+}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.card-body{font-size:11px;color:var(--muted);line-height:1.6}
+
+/* ── badges ── */
+.badge{
+  display:inline-block;font-size:10px;font-weight:500;
+  border-radius:4px;padding:1px 7px;margin:2px 2px 0 0;
+  font-family:'DM Mono',monospace;letter-spacing:.02em;
+}
+.b-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
+.b-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+.b-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
+.b-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.b-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.b-coral{background:var(--coral-bg);color:var(--coral);border:1px solid var(--coral-border)}
+.b-gray{background:var(--gray-bg);color:var(--gray);border:1px solid var(--gray-border)}
+
+/* ── detail panel ── */
+.detail-panel{
+  display:none;
+  background:var(--bg);
+  border-radius:var(--radius-sm);
+  padding:9px 11px;
+  margin-top:8px;
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.65;
+  border-left:2px solid var(--border2);
+}
+.detail-panel.open{display:block}
+.detail-panel code{
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  color:var(--amber);
+  background:var(--amber-bg);
+  padding:1px 5px;
+  border-radius:3px;
+}
+.detail-panel strong{color:var(--text);font-weight:500}
+
+/* ── color dots ── */
+.d-purple{background:var(--purple)}
+.d-teal{background:var(--teal)}
+.d-amber{background:var(--amber)}
+.d-blue{background:var(--blue)}
+.d-green{background:var(--green)}
+.d-red{background:var(--red)}
+.d-coral{background:var(--coral)}
+.d-gray{background:var(--gray)}
+
+/* ── tech stack footer ── */
+.techstack{
+  margin-top:18px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:12px 14px;
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.8;
+}
+.techstack strong{color:var(--text);font-weight:600;font-size:12px;display:block;margin-bottom:6px}
+.tech-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.tech-tag{
+  font-family:'DM Mono',monospace;font-size:10px;
+  color:var(--blue);background:var(--blue-bg);
+  border:1px solid var(--blue-border);
+  border-radius:4px;padding:2px 8px;
+}
+
+/* ── click hint ── */
+.hint{
+  text-align:center;
+  font-size:10px;font-family:'DM Mono',monospace;
+  color:var(--dim);letter-spacing:.04em;
+  margin-bottom:14px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────── -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-title"><em>Edu</em>Feed — full project pipeline</div>
+  </div>
+  <div class="header-sub">AI-DRIVEN STUDENT FEEDBACK ANALYSIS & INSIGHT GENERATION</div>
+  <div class="header-meta">
+    <span class="meta-pill">dataset → RateMyProfessor · 20,000 rows · 51 cols</span>
+    <span class="meta-pill">after preprocessing → 19,981 rows · 45 cols</span>
+    <span class="meta-pill">target → Indian college feedback system</span>
+  </div>
+</div>
+
+<!-- ── SHIELD ─────────────────────────────────────── -->
+<div class="shield">
+  <div class="shield-icon">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path d="M8 1L2 3.5v5C2 12 5 14.5 8 15c3-.5 6-3 6-6.5v-5L8 1Z" fill="#2a1010" stroke="#f56b6b" stroke-width="1.2"/>
+      <path d="M5.5 8l1.8 1.8L10.5 6" stroke="#f56b6b" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="shield-text">
+    <div class="shield-title">Privacy — enforced at every stage</div>
+    <div class="shield-body">No student name, roll number, email, section, batch, or IP is ever stored or passed to any model. Gender and race columns are dropped at ingestion — not used anywhere in the pipeline. All identifiers stripped at collection. Feedback is aggregated only at faculty × course × semester level. Groups with fewer than 5 responses are suppressed from all outputs.</div>
+  </div>
+</div>
+
+<div class="hint">↓ click any card to expand implementation details</div>
+
+<!-- ══════════════════════════════════════════════════
+     PHASE 1 — DATA SOURCES
+════════════════════════════════════════════════════ -->
+<div class="phase-divider">
+  <div class="pdline"></div>
+  <div class="pdlabel">Phase 1 — Data sources</div>
+  <div class="pdline"></div>
+</div>
+
+<div class="row">
+  <div class="card" onclick="toggle('d1')">
+    <div class="card-head"><span class="dot d-teal"></span>RateMyProfessor dataset</div>
+    <div class="card-body">
+      Your primary dataset for the entire project.<br>
+      <span class="badge b-teal">20,000 rows · 51 columns</span><br>
+      <span class="badge b-teal">comments + student_star labels</span><br>
+      <span class="badge b-teal">21 binary tag columns</span><br>
+      Used for preprocessing, NLP training & ML models.
+    </div>
+    <div class="detail-panel" id="d1">
+      <strong>Columns used:</strong> comments, student_star, student_difficult, star_rating, diff_index, take_again, word_comment, 21 binary tag columns (gives_good_feedback, caring, tough_grader etc.), department_name, year_since_first_review, post_date.<br><br>
+      <strong>Columns dropped immediately:</strong> gender, race, asian, hispanic, nh_black, nh_white (privacy), professor_name, school_name, state_name, local_name (not needed for modelling), IsCourseOnline (replaced by course_mode feature).<br><br>
+      <strong>Role:</strong> Train base sentiment model (comments → student_star as label). Transfer learned representations to Indian survey comments later. The 21 binary tags are used as features in the Random Forest rating prediction model.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card" onclick="toggle('d2')">
+    <div class="card-head"><span class="dot d-amber"></span>Indian college survey (primary)</div>
+    <div class="card-body">
+      Google Form / custom web app.<br>
+      <span class="badge b-amber">300–500 responses minimum</span><br>
+      <span class="badge b-amber">Likert 1–5 ratings · open text</span><br>
+      <span class="badge b-amber">Faculty code · course · semester</span><br>
+      No name, roll no., or email collected.
+    </div>
+    <div class="detail-panel" id="d2">
+      <strong>Form fields:</strong> college, department, semester, course_code, faculty_code (admin-assigned, never a real name), 8 Likert questions (teaching_clarity, syllabus_coverage, lab_quality, marks_fairness, doubt_sessions, industry_relevance, approachability, overall_rating), 1 open text comment box, attendance bracket (75–85 / 85–95 / >95), grade bracket (O / A+ / A / B / C / F — not exact marks).<br><br>
+      <strong>Key rule:</strong> Disable email collection in Google Forms before launch. No name field. All dropdowns use admin-assigned codes — no way to identify a student from the form response alone.<br><br>
+      <strong>Role:</strong> Final target domain. Sentiment model fine-tuned on this data. Clustering and trend analysis done on this data. Dashboard shows only this data.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PHASE 2 — ANONYMISATION & INGESTION
+════════════════════════════════════════════════════ -->
+<div class="phase-divider">
+  <div class="pdline"></div>
+  <div class="pdlabel">Phase 2 — Anonymisation & ingestion</div>
+  <div class="pdline"></div>
+</div>
+
+<div class="row">
+  <div class="card" onclick="toggle('d3')">
+    <div class="card-head"><span class="dot d-red"></span>Strip all PII at source</div>
+    <div class="card-body">
+      Before any data enters the pipeline:<br>
+      <span class="badge b-red">drop: name, roll, email, section</span><br>
+      <span class="badge b-red">drop: gender, race, IP address</span><br>
+      Assign anonymous <code>survey_id</code> (UUID).
+    </div>
+    <div class="detail-panel" id="d3">
+      <code>df.drop(['name','roll','email','section','ip','gender','race','asian','hispanic','nh_black','nh_white'], axis=1, errors='ignore')</code><br><br>
+      Assign <code>uuid4()</code> as survey_id. Store UUID→original mapping in a separate access-controlled file that is never used in analysis or passed to any model.<br><br>
+      <strong>For Google Forms:</strong> Disable "collect email addresses" before launch. Never add a name field. Only dropdown / radio for all identifiable fields.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card" onclick="toggle('d4')">
+    <div class="card-head"><span class="dot d-red"></span>K-anonymity check</div>
+    <div class="card-body">
+      Ensure no group has fewer than k=5 responses.<br>
+      <span class="badge b-red">group: faculty × course × semester</span><br>
+      Groups &lt;5 responses → suppressed.<br>
+      Never shown in dashboard or reports.
+    </div>
+    <div class="detail-panel" id="d4">
+      <code>groups = df.groupby(['faculty_code','course_code','semester']).size()</code><br>
+      <code>valid = groups[groups >= 5].index</code><br>
+      <code>df = df[df.set_index([...]).index.isin(valid)]</code><br><br>
+      <strong>Why:</strong> If only 1 student took a rare elective with a specific faculty, even aggregated output can re-identify them. k=5 is the minimum safe threshold. Log suppressed groups for admin review only — never surface them in the dashboard.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card" onclick="toggle('d5')">
+    <div class="card-head"><span class="dot d-gray"></span>Mask names in comments</div>
+    <div class="card-body">
+      Free-text field only:<br>
+      <span class="badge b-gray">spaCy NER → mask PERSON entities</span><br>
+      <span class="badge b-gray">"Prof Sharma" → [FACULTY]</span><br>
+      <span class="badge b-gray">roll numbers → [ID]</span>
+    </div>
+    <div class="detail-panel" id="d5">
+      <code>import spacy; nlp = spacy.load('en_core_web_sm')</code><br>
+      For each comment: detect PERSON, ORG entities → replace with [PERSON] / [ORG] placeholders.<br>
+      Regex mask roll numbers: <code>r'\b\d{2}[A-Z]{2}\d{3,4}\b'</code> → [ID]<br>
+      Regex mask emails: <code>r'[\w.]+@[\w.]+\.\w+'</code> → [EMAIL]<br><br>
+      Store masked version as <code>comment_clean</code>. Original comment never stored after this step. Only <code>comment_clean</code> is passed to all NLP models.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PHASE 3 — PREPROCESSING (YOUR ACTUAL STEPS)
+════════════════════════════════════════════════════ -->
+<div class="phase-divider">
+  <div class="pdline"></div>
+  <div class="pdlabel">Phase 3 — Data cleaning & feature engineering</div>
+  <div class="pdline"></div>
+</div>
+
+<div class="row">
+  <div class="card done" onclick="toggle('d6')">
+    <div class="card-head"><span class="dot d-blue"></span>Step 1–2 · Dedup & date parse</div>
+    <div class="card-body">
+      <span class="badge b-blue">drop_duplicates() → 19 rows removed</span><br>
+      <span class="badge b-blue">19,981 rows remain</span><br>
+      <span class="badge b-blue">pd.to_datetime(format='mixed')</span><br>
+      post_year, post_month extracted.<br>
+      date_missing_flag for 5 unparseable rows.
+    </div>
+    <div class="detail-panel" id="d6">
+      <code>df.drop_duplicates(inplace=True)</code><br>
+      <code>df['post_date'] = pd.to_datetime(df['post_date'], format='mixed', errors='coerce')</code><br>
+      <code>df['post_year'] = df['post_date'].dt.year.astype('Int64')</code><br>
+      <code>df['post_month'] = df['post_date'].dt.month.astype('Int64')</code><br>
+      <code>df['date_missing_flag'] = df['post_date'].isna().astype(int)</code><br><br>
+      <strong>Note:</strong> <code>infer_datetime_format=True</code> is deprecated in pandas 2.x — use <code>format='mixed'</code> instead.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card done" onclick="toggle('d7')">
+    <div class="card-head"><span class="dot d-blue"></span>Step 3 · Missing value imputation</div>
+    <div class="card-body">
+      <span class="badge b-blue">take_again → global median</span><br>
+      <span class="badge b-blue">tag_professor → "No Tag"</span><br>
+      <span class="badge b-blue">survey cols → "Not Reported"</span><br>
+      <span class="badge b-blue">student_star/difficult → median</span><br>
+      comments → empty string · word_count → 0
+    </div>
+    <div class="detail-panel" id="d7">
+      Strategy per column type:<br>
+      • <strong>take_again</strong> (85% missing) → global median fill. Professor-level median not used — too sparse.<br>
+      • <strong>tag_professor</strong> (44% missing) → "No Tag". Missing = student left it blank, not broken data.<br>
+      • <strong>attence, for_credits, would_take_agains, grades</strong> → "Not Reported". Optional fields.<br>
+      • <strong>student_star, student_difficult</strong> (5 nulls each) → column median.<br>
+      • <strong>comments</strong> → empty string. <strong>word_comment</strong> → 0.<br>
+      • <strong>name_not_onlines</strong> → "Unknown".
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card done" onclick="toggle('d8')">
+    <div class="card-head"><span class="dot d-blue"></span>Step 4–5 · Clean text & cap outliers</div>
+    <div class="card-body">
+      <span class="badge b-blue">strip + title case on name cols</span><br>
+      <span class="badge b-blue">grade grouping → A/B/C Range</span><br>
+      <span class="badge b-blue">IQR capping on 6 numeric cols</span><br>
+      num_student: 1,439 values capped.<br>
+      star_rating: 20 values capped.
+    </div>
+    <div class="detail-panel" id="d8">
+      <strong>Text:</strong> <code>.str.strip().str.title()</code> on professor_name, school_name, department_name, local_name, state_name.<br><br>
+      <strong>Grade grouping:</strong> A+/A/A- → "A Range", B+/B/B- → "B Range", C+/C/C- → "C Range", D/F → "D/F", WD/INC/Not → "Other/WD".<br><br>
+      <strong>IQR cap formula:</strong> Lower = Q1 − 1.5×IQR · Upper = Q3 + 1.5×IQR · <code>series.clip(lower, upper)</code><br>
+      Columns: star_rating, student_star, student_difficult, diff_index, num_student, word_comment.<br><br>
+      <strong>Note:</strong> Winsorisation — rows are NOT dropped, only extreme values are bounded.
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:8px" class="row">
+  <div class="card done" onclick="toggle('d9')">
+    <div class="card-head"><span class="dot d-blue"></span>Step 6 · Feature engineering</div>
+    <div class="card-body">
+      <span class="badge b-blue">sentiment_label → target variable</span><br>
+      <span class="badge b-blue">help_ratio · difficulty_category</span><br>
+      <span class="badge b-blue">course_mode · experience_bucket</span><br>
+      <span class="badge b-blue">comment_length_cat · tag_count</span><br>
+      <span class="badge b-blue">grade_group · post_year/month</span>
+    </div>
+    <div class="detail-panel" id="d9">
+      <strong>sentiment_label</strong> (NLP target): student_star ≥4 → Positive, ≥3 → Neutral, &lt;3 → Negative.<br>
+      <strong>help_ratio</strong>: help_useful / (help_useful + help_not_useful + 1e-6) — avoids divide-by-zero.<br>
+      <strong>difficulty_category</strong>: student_difficult ≤2.5 → Easy, ≤3.5 → Moderate, else Difficult.<br>
+      <strong>course_mode</strong>: IsCourseOnline mapped → Online/Offline, then IsCourseOnline dropped.<br>
+      <strong>experience_bucket</strong>: 0–2 / 3–5 / 6–10 / 10+ yrs from year_since_first_review.<br>
+      <strong>comment_length_cat</strong>: 0 → No Comment, ≤15 → Short, ≤50 → Medium, else Long.<br>
+      <strong>tag_count</strong>: count of individual tags in tag_professor (split on double-space).
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card done" onclick="toggle('d10')">
+    <div class="card-head"><span class="dot d-blue"></span>Step 7 · Drop identity & validate types</div>
+    <div class="card-body">
+      <span class="badge b-red">drop: gender, race, asian</span><br>
+      <span class="badge b-red">drop: hispanic, nh_black, nh_white</span><br>
+      <span class="badge b-blue">cast 9 cols → category dtype</span><br>
+      <span class="badge b-blue">cast 21 tag cols → int</span><br>
+      Final: 19,981 rows · 45 columns.
+    </div>
+    <div class="detail-panel" id="d10">
+      <code>drop_cols = ['gender','race','asian','hispanic','nh_black','nh_white','IsCourseOnline']</code><br>
+      <code>df.drop(columns=drop_cols, inplace=True)</code><br><br>
+      <strong>Category dtype cast:</strong> sentiment_label, difficulty_category, grade_group, experience_bucket, comment_length_cat, course_mode, attence, for_credits, would_take_agains.<br><br>
+      <strong>Verify with:</strong> <code>df.info()</code> and <code>df.describe()</code> — check zero critical nulls, correct dtypes, value ranges in bounds.<br><br>
+      <strong>Save:</strong> <code>df.to_csv('edufeed_clean_data.csv', index=False)</code>
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card done" onclick="toggle('d10b')">
+    <div class="card-head"><span class="dot d-blue"></span>NLP text preprocessing</div>
+    <div class="card-body">
+      On the <code>comments</code> column only:<br>
+      <span class="badge b-blue">lowercase + remove punctuation</span><br>
+      <span class="badge b-blue">remove stopwords (NLTK)</span><br>
+      <span class="badge b-blue">lemmatize (spaCy)</span><br>
+      Flag comments &lt;5 words as low_quality.
+    </div>
+    <div class="detail-panel" id="d10b">
+      Pipeline order: lowercase → strip URLs/emails → remove punctuation → NLTK stopword removal (English + domain words: "professor","class","course","teacher") → spaCy lemmatization → compute word_count.<br><br>
+      <code>low_quality = True</code> if word_count &lt; 5 after cleaning. These comments are down-weighted in aggregations — not dropped.<br><br>
+      Keep both: <code>comment_masked</code> (from Phase 2) and <code>comment_processed</code> (this step). Processed version fed to all models. Masked version kept for audit.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PHASE 4 — NLP & ML MODELS
+════════════════════════════════════════════════════ -->
+<div class="phase-divider">
+  <div class="pdline"></div>
+  <div class="pdlabel">Phase 4 — NLP & ML models</div>
+  <div class="pdline"></div>
+</div>
+
+<div class="row">
+  <div class="card" onclick="toggle('d11')">
+    <div class="card-head"><span class="dot d-purple"></span>Sentiment analysis</div>
+    <div class="card-body">
+      <span class="badge b-purple">Baseline: VADER (no training)</span><br>
+      <span class="badge b-purple">Model: fine-tuned BERT</span><br>
+      Train on RMP → fine-tune on Indian data.<br>
+      Output: Positive / Neutral / Negative + confidence score.
+    </div>
+    <div class="detail-panel" id="d11">
+      <strong>Step 1 — VADER baseline:</strong> Run VADER on all comments. No training needed. Fast benchmark. Use <code>SentimentIntensityAnalyzer().polarity_scores(text)['compound']</code>.<br><br>
+      <strong>Step 2 — BERT fine-tune:</strong> Label RMP data using sentiment_label column (already created in Step 6). Fine-tune <code>bert-base-uncased</code> on RMP comments. Use HuggingFace Trainer API. Train/val split 80/20.<br><br>
+      <strong>Step 3 — Transfer to Indian data:</strong> Few-shot fine-tune on Indian survey comments (even 200 labelled examples improves significantly). Output: sentiment label + confidence score per comment.<br><br>
+      <strong>Confidence threshold:</strong> Only use predictions with confidence &gt;0.70. Flag uncertain ones separately.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card" onclick="toggle('d12')">
+    <div class="card-head"><span class="dot d-purple"></span>Aspect-based analysis (ABSA)</div>
+    <div class="card-body">
+      <span class="badge b-purple">5 aspects: teaching, workload</span><br>
+      <span class="badge b-purple">fairness, clarity, accessibility</span><br>
+      Method: rule-based keyword matching.<br>
+      Output: aspect → sentiment per comment.
+    </div>
+    <div class="detail-panel" id="d12">
+      <strong>Method: rule-based (keyword dictionaries).</strong> No separate model training needed.<br><br>
+      Keyword dictionaries per aspect:<br>
+      • <strong>teaching</strong>: explains, lectures, teaches, engaging, boring, monotone<br>
+      • <strong>workload</strong>: homework, assignments, exam, syllabus, too much, manageable<br>
+      • <strong>fairness</strong>: marks, grading, biased, partial, fair, internal<br>
+      • <strong>clarity</strong>: clear, confusing, understand, concept, doubt<br>
+      • <strong>accessibility</strong>: available, approachable, responds, office hours<br><br>
+      For each comment: detect which aspects are mentioned → apply sentiment model to surrounding 10-word context → assign per-aspect sentiment.<br><br>
+      Aggregate per faculty_code: % positive per aspect → radar chart in dashboard.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card" onclick="toggle('d13')">
+    <div class="card-head"><span class="dot d-purple"></span>Faculty clustering</div>
+    <div class="card-body">
+      <span class="badge b-purple">Features: Likert + sentiment + tags</span><br>
+      <span class="badge b-purple">K-means · k=4 (elbow method)</span><br>
+      Normalise with StandardScaler.<br>
+      Output: Engaging / Strict / Accessible / Mixed.
+    </div>
+    <div class="detail-panel" id="d13">
+      <strong>Features:</strong> avg_rating, teaching_style_score, workload_index, difficulty_category (encoded), would_take_again_rate, sentiment_positive_pct, tag_count.<br><br>
+      <code>from sklearn.preprocessing import StandardScaler</code><br>
+      <code>from sklearn.cluster import KMeans</code><br>
+      Normalise all features with StandardScaler. Determine k using elbow method (plot inertia for k=2 to 8). Typically k=4 works best.<br><br>
+      <strong>Validate</strong> with silhouette score (target &gt;0.4).<br>
+      <strong>Visualise</strong> with PCA 2D scatter plot.<br>
+      Assign human-readable cluster names post-hoc based on centroid values.
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:8px" class="row">
+  <div class="card" onclick="toggle('d14')">
+    <div class="card-head"><span class="dot d-green"></span>Topic modelling (LDA)</div>
+    <div class="card-body">
+      <span class="badge b-green">Input: cleaned comment_processed</span><br>
+      <span class="badge b-green">Gensim LDA · 6 topics</span><br>
+      Tune with coherence score (c_v).<br>
+      Output: top themes per faculty / dept.
+    </div>
+    <div class="detail-panel" id="d14">
+      <code>from gensim.models import LdaModel</code><br>
+      <code>from gensim.corpora import Dictionary</code><br><br>
+      Build dictionary + bag-of-words corpus from comment_processed. Train LDA with num_topics=6. Tune with coherence score — pick num_topics with highest c_v score.<br><br>
+      <strong>Expected topics for Indian college context:</strong> exam_pattern, lab_quality, communication, availability, fairness, industry_connect.<br><br>
+      Assign dominant topic per comment. Aggregate: top 3 topics per faculty_code. Display as word cloud per topic in dashboard.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card" onclick="toggle('d15')">
+    <div class="card-head"><span class="dot d-green"></span>Rating prediction model</div>
+    <div class="card-body">
+      <span class="badge b-green">Features: Likert + sentiment + tags</span><br>
+      <span class="badge b-green">Model: Random Forest</span><br>
+      Target: overall_rating (1–5).<br>
+      Evaluate: RMSE · MAE · R² score.
+    </div>
+    <div class="detail-panel" id="d15">
+      <strong>Target:</strong> overall_rating (1–5, from Indian survey).<br>
+      <strong>Features:</strong> all Likert columns, sentiment_score (BERT confidence), workload_index, teaching_style_score, word_count, all 21 binary tag flags, tag_count, help_ratio, difficulty_category (encoded).<br><br>
+      <code>from sklearn.ensemble import RandomForestRegressor</code><br>
+      Train/test split: 80/20 stratified by faculty_code.<br>
+      Evaluate: RMSE, MAE, R².<br><br>
+      <strong>Key output:</strong> Feature importance plot — reveals which factors most drive student satisfaction. Put this in your report. Expected top features: teaching_clarity, doubt_sessions, overall sentiment score.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card" onclick="toggle('d16')">
+    <div class="card-head"><span class="dot d-green"></span>Trend analysis</div>
+    <div class="card-body">
+      <span class="badge b-green">Semester-over-semester tracking</span><br>
+      <span class="badge b-green">Dept vs college avg benchmark</span><br>
+      Output: Improving / Stable / Declining flag.<br>
+      Alert if rating drops &gt;0.5 in one semester.
+    </div>
+    <div class="detail-panel" id="d16">
+      For each faculty_code: compute avg_rating per semester. Fit linear regression to detect trend slope.<br><br>
+      <strong>Flag logic:</strong> slope &gt;+0.2 → Improving · slope &lt;−0.2 → Declining · else Stable.<br><br>
+      <strong>Benchmark:</strong> compare faculty avg to department median and college median. Display as delta (Δ) in dashboard.<br><br>
+      <strong>Alert trigger:</strong> current semester rating is 1.0+ below faculty's own historical average → flag for admin review. This signals something changed — not a permanent label.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PHASE 5 — OUTPUT & DASHBOARD
+════════════════════════════════════════════════════ -->
+<div class="phase-divider">
+  <div class="pdline"></div>
+  <div class="pdlabel">Phase 5 — Output & dashboard</div>
+  <div class="pdline"></div>
+</div>
+
+<div class="row">
+  <div class="card" onclick="toggle('d17')">
+    <div class="card-head"><span class="dot d-coral"></span>Faculty report card</div>
+    <div class="card-body">
+      <span class="badge b-coral">Avg rating + trend arrow</span><br>
+      <span class="badge b-coral">Aspect radar chart (5 axes)</span><br>
+      <span class="badge b-coral">Top positive + improvement themes</span><br>
+      <span class="badge b-coral">Cluster profile label</span><br>
+      No individual comments ever shown.
+    </div>
+    <div class="detail-panel" id="d17">
+      Show only: aggregated scores, aspect breakdown (radar chart), cluster type label, trend flag, top 3 LDA topics, % positive / neutral / negative sentiment.<br><br>
+      <strong>Never show:</strong> individual comments, individual student ratings, raw text — only aggregated sentiment percentages and representative paraphrased themes.<br><br>
+      <strong>Access control:</strong> Faculty sees only their own report. HOD sees their department. Principal sees all. Implement with session-based role check in Streamlit or Flask.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card" onclick="toggle('d18')">
+    <div class="card-head"><span class="dot d-coral"></span>Department dashboard</div>
+    <div class="card-body">
+      <span class="badge b-coral">Dept avg vs college avg</span><br>
+      <span class="badge b-coral">Top performing + needs-attention</span><br>
+      <span class="badge b-coral">Common themes across dept</span><br>
+      Faculty names shown to HOD+ only.
+    </div>
+    <div class="detail-panel" id="d18">
+      HOD view: anonymised faculty codes shown for general staff — named only for HOD's own reports.<br><br>
+      <strong>Highlight:</strong> top 2 faculty by avg rating + bottom 2 by trend (declining flag).<br>
+      Department-level word cloud from LDA topics. Semester comparison bar chart.<br><br>
+      <strong>Export:</strong> PDF report per semester. Suppress all groups with k&lt;5 in exports too — not just dashboard.
+    </div>
+  </div>
+  <div class="arrow">→</div>
+  <div class="card" onclick="toggle('d19')">
+    <div class="card-head"><span class="dot d-coral"></span>AI insight generation</div>
+    <div class="card-body">
+      <span class="badge b-coral">Input: aggregated scores only</span><br>
+      <span class="badge b-coral">Model: Claude API (Anthropic)</span><br>
+      Auto-generated actionable suggestions.<br>
+      <em>"Students flag unclear exam patterns — consider sharing model answers."</em><br>
+      This is the EDU-FEED core AI feature.
+    </div>
+    <div class="detail-panel" id="d19">
+      <strong>Input to Claude API:</strong> aggregated aspect scores + top LDA topics + sentiment % — <em>never raw comments, never individual data.</em><br><br>
+      <strong>Prompt template:</strong><br>
+      "Faculty scored 3.2/5 on exam_fairness, 4.1/5 on teaching_clarity. Top student concern: 'exam pattern'. Generate 2–3 specific, constructive, actionable improvement suggestions in a supportive tone."<br><br>
+      <strong>Model:</strong> <code>claude-sonnet-4-6</code> via Anthropic API. Use <code>max_tokens=300</code> per card to keep suggestions concise.<br><br>
+      Output rendered in dashboard as insight cards — one card per faculty, visible only to that faculty and HOD+.
+    </div>
+  </div>
+</div>
+
+<!-- ── TECH STACK ──────────────────────────────────── -->
+<div class="techstack">
+  <strong>Tech stack</strong>
+  <div class="tech-row">
+    <span class="tech-tag">Google Forms / Flask</span>
+    <span class="tech-tag">Python 3.12</span>
+    <span class="tech-tag">pandas</span>
+    <span class="tech-tag">numpy</span>
+    <span class="tech-tag">scikit-learn</span>
+    <span class="tech-tag">spaCy (NER + lemmatize)</span>
+    <span class="tech-tag">NLTK (stopwords)</span>
+    <span class="tech-tag">VADER</span>
+    <span class="tech-tag">HuggingFace BERT</span>
+    <span class="tech-tag">Gensim LDA</span>
+    <span class="tech-tag">Random Forest</span>
+    <span class="tech-tag">KMeans + PCA</span>
+    <span class="tech-tag">Streamlit / Plotly</span>
+    <span class="tech-tag">Claude API (Anthropic)</span>
+    <span class="tech-tag">Google Colab (CPU runtime)</span>
+  </div>
+</div>
+
+<script>
+function toggle(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle('open');
+}
+</script>
+</body>
+</html>
