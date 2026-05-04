@@ -1,0 +1,214 @@
+[
+  {
+    "text": "I had learnt every concepts from the last class\n",
+    "sentiment": "Positive"
+  },
+  {
+    "text": "Teacher is very good in their explanation",
+    "sentiment": "Positive"
+  },
+  {
+    "text": "He had anger issues, and was the worst teacher",
+    "sentiment": "Negative"
+  },
+  {
+    "comments": null,
+    "sentiment_label": "Positive",
+    "department_name": null,
+    "professor_name": null,
+    "star_rating": null,
+    "student_name": null,
+    "usn": null,
+    "email": null
+  },
+  {
+    "comments": "[STUDENT] [ROLL] [EMAIL] he is very worst teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Health Science Department",
+    "professor_name": "Mary  Richardson",
+    "star_rating": "3/5",
+    "student_name": "aishwarya",
+    "usn": "1ew22is006",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "[STUDENT] [ROLL] [EMAIL] he is very worst teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Health Science Department",
+    "professor_name": "Mary  Richardson",
+    "star_rating": "5/5",
+    "student_name": "aishwarya",
+    "usn": "1ew22is006",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "[STUDENT] [ROLL] [EMAIL] He scolds for silly mistake, talks angry",
+    "sentiment_label": "Negative",
+    "department_name": "",
+    "professor_name": "",
+    "star_rating": "4/5",
+    "student_name": "Test",
+    "usn": "1ew2290",
+    "email": "test@gmail.com"
+  },
+  {
+    "comments": "[STUDENT] [ROLL][STUDENT] [EMAIL] Teacher is not teaching good.",
+    "sentiment_label": "Negative",
+    "department_name": "Mathematics Department",
+    "professor_name": "",
+    "star_rating": "4/5",
+    "student_name": "Test",
+    "usn": "22Test",
+    "email": "Test@gmail.com"
+  },
+  {
+    "comments": "[STUDENT] [ROLL] [EMAIL] he is not teaching ",
+    "sentiment_label": "Negative",
+    "department_name": "",
+    "professor_name": "",
+    "star_rating": "4/5",
+    "student_name": "suhani ",
+    "usn": "fjhiuer",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "[STUDENT] [ROLL] [EMAIL] he is not teaching ",
+    "sentiment_label": "Negative",
+    "department_name": "",
+    "professor_name": "",
+    "star_rating": "5/5",
+    "student_name": "suhani ",
+    "usn": "fjhiuer",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "[STUDENT] [ROLL] [EMAIL] he is not teaching ",
+    "sentiment_label": "Negative",
+    "department_name": "",
+    "professor_name": "",
+    "star_rating": "2/5",
+    "student_name": "suhani ",
+    "usn": "fjhiuer",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "[STUDENT] [ROLL] [EMAIL] he is not teaching",
+    "sentiment_label": "Negative",
+    "department_name": "",
+    "professor_name": "",
+    "star_rating": "4/5",
+    "student_name": "Afra",
+    "usn": "1gfghdj",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "[STUDENT] [ROLL] [EMAIL] he is teaching well",
+    "sentiment_label": "Positive",
+    "department_name": "",
+    "professor_name": "",
+    "star_rating": "4/5",
+    "student_name": "aish",
+    "usn": "weduhbd",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "[STUDENT] [ROLL] [EMAIL] HE is teaching well ",
+    "sentiment_label": "Positive",
+    "department_name": "Biochemistry Department",
+    "professor_name": "Alan  Cavaiola",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew22is06",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "Good teacher",
+    "sentiment_label": "Neutral",
+    "department_name": "Writing Department",
+    "professor_name": "Robert  Warden",
+    "star_rating": "4/5",
+    "student_name": "",
+    "usn": "",
+    "email": ""
+  },
+  {
+    "comments": "Teaching very well",
+    "sentiment_label": "Negative",
+    "department_name": "Agriculture Department",
+    "professor_name": "Albert  Pyzik",
+    "star_rating": "4/5",
+    "student_name": "Name",
+    "usn": "22ew99",
+    "email": "trial*mail"
+  },
+  {
+    "comments": "Good teacher, teaches well.",
+    "sentiment_label": "Positive",
+    "department_name": "Automotive Technology Department",
+    "professor_name": "Albert  Pyzik",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew22is",
+    "email": "tria"
+  },
+  {
+    "comments": "I overall enjoyed this class because the assignments were straightforward and interesting. I just didn\\'t enjoy the video project because I felt like no one in my group cared enough to help.",
+    "sentiment_label": "Positive",
+    "department_name": "Automotive Technology Department",
+    "professor_name": "Albert  Pyzik",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew22",
+    "email": "Trail"
+  },
+  {
+    "comments": "I overall enjoyed this class because the assignments were straightforward and interesting. I just didn\\'t enjoy the video project because I felt like no one in my group cared enough to help.",
+    "sentiment_label": "Positive",
+    "department_name": "Automotive Technology Department",
+    "professor_name": "Albert  Pyzik",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew22",
+    "email": "Trail"
+  },
+  {
+    "comments": "Good teaching",
+    "sentiment_label": "Negative",
+    "department_name": "Aviation Department",
+    "professor_name": "Albert  Pyzik",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew2",
+    "email": "Trial1"
+  },
+  {
+    "comments": "Bad teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Automotive Technology Department",
+    "professor_name": "Albert  Pyzik",
+    "star_rating": "4/5",
+    "student_name": "",
+    "usn": "1ew2",
+    "email": "Trail"
+  },
+  {
+    "comments": "Not very bad teaching",
+    "sentiment_label": "Negative",
+    "department_name": "Automotive Technology Department",
+    "professor_name": "Alvin  Snadowsky",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew2",
+    "email": "Triall*200"
+  },
+  {
+    "comments": "Good working",
+    "sentiment_label": "Positive",
+    "department_name": "Classics Department",
+    "professor_name": "Andrew  Irvine",
+    "star_rating": "3/5",
+    "student_name": "Aish",
+    "usn": "1ew22is",
+    "email": "Something"
+  }
+]

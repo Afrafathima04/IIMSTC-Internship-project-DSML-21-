@@ -1,0 +1,11 @@
+comments,sentiment_label,department_name,professor_name,star_rating,student_name,usn,email,course_name
+Excellent explanation and very clear lectures,Positive,CSE,Mahesh Gowda,5/5,Asha,1RV21CS001,asha@example.com,Data Structures
+Assignments were useful and manageable,Positive,CSE,Mahesh Gowda,4/5,Rahul,1RV21CS002,rahul@example.com,Data Structures
+Too much homework and unclear instructions,Negative,CSE,Mahesh Gowda,2/5,Neha,1RV21CS003,neha@example.com,Data Structures
+Faculty was supportive and answered doubts well,Positive,ECE,Anita Rao,5/5,Manoj,1RV21EC004,manoj@example.com,Signals
+Labs need better equipment and maintenance,Negative,ECE,Anita Rao,2/5,Sneha,1RV21EC005,sneha@example.com,Signals
+Class pace was average but content was okay,Neutral,ECE,Anita Rao,3/5,Varun,1RV21EC006,varun@example.com,Signals
+Great practical sessions and examples,Positive,ISE,Priya Sharma,5/5,Kiran,1RV21IS007,kiran@example.com,Database Systems
+Feedback was fair but exams were difficult,Neutral,ISE,Priya Sharma,3/5,Divya,1RV21IS008,divya@example.com,Database Systems
+Communication was poor and grading felt harsh,Negative,ISE,Priya Sharma,1/5,Arjun,1RV21IS009,arjun@example.com,Database Systems
+Overall a balanced course with decent support,Neutral,ME,Rohit Kulkarni,3/5,Pooja,1RV21ME010,pooja@example.com,Thermodynamics
