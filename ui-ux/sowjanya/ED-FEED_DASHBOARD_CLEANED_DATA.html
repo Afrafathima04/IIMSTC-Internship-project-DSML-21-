@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ED-FEED — Student Feedback Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ─────────────────────────────────────────
+   ROOT & RESET
+───────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#07090f;
+  --surface:#0e1117;
+  --card:#13181f;
+  --card2:#191f28;
+  --border:#1e2733;
+  --border2:#252e3a;
+  --accent:#5b8cf8;
+  --accent2:#7c5cfb;
+  --accent-glow:rgba(91,140,248,.18);
+  --pos:#34d399;
+  --pos-bg:rgba(52,211,153,.12);
+  --neg:#f87171;
+  --neg-bg:rgba(248,113,113,.12);
+  --neu:#fbbf24;
+  --neu-bg:rgba(251,191,36,.12);
+  --text:#e8edf4;
+  --text2:#8896a8;
+  --text3:#50616f;
+  --radius:14px;
+  --radius-sm:8px;
+  --sidebar:240px;
+  --transition:.22s cubic-bezier(.4,0,.2,1);
+}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ─────────────────────────────────────────
+   SIDEBAR
+───────────────────────────────────────── */
+.sidebar{
+  position:fixed;top:0;left:0;
+  width:var(--sidebar);height:100vh;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  z-index:100;
+  transition:transform var(--transition);
+}
+.sidebar-logo{
+  padding:28px 22px 20px;
+  border-bottom:1px solid var(--border);
+}
+.logo-mark{
+  display:flex;align-items:center;gap:10px;
+}
+.logo-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;
+  flex-shrink:0;
+}
+.logo-text{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;letter-spacing:.5px;}
+.logo-text span{color:var(--accent);}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:.6px;text-transform:uppercase;}
+
+.nav{padding:16px 12px;flex:1;overflow-y:auto;}
+.nav-section-label{
+  font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--text3);padding:14px 10px 6px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 12px;border-radius:var(--radius-sm);
+  cursor:pointer;color:var(--text2);
+  font-size:13.5px;font-weight:500;
+  transition:all var(--transition);
+  margin-bottom:2px;
+  position:relative;
+}
+.nav-item:hover{background:var(--card);color:var(--text);}
+.nav-item.active{
+  background:var(--accent-glow);color:var(--accent);
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:3px;border-radius:2px;background:var(--accent);
+}
+.nav-icon{width:18px;text-align:center;font-size:15px;}
+.nav-badge{
+  margin-left:auto;background:var(--neg);color:#fff;
+  font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;
+}
+
+.sidebar-footer{
+  padding:16px 20px;border-top:1px solid var(--border);
+}
+.user-card{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:var(--card);
+  border-radius:var(--radius-sm);cursor:pointer;
+  transition:background var(--transition);
+}
+.user-card:hover{background:var(--card2);}
+.user-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#fff;flex-shrink:0;
+}
+.user-name{font-size:12.5px;font-weight:600;}
+.user-role{font-size:10.5px;color:var(--text3);}
+
+/* ─────────────────────────────────────────
+   TOP NAVBAR
+───────────────────────────────────────── */
+.navbar{
+  position:fixed;top:0;left:var(--sidebar);right:0;
+  height:60px;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;
+  padding:0 24px;z-index:99;
+}
+.page-title{
+  font-family:'Syne',sans-serif;font-size:17px;font-weight:700;
+  white-space:nowrap;
+}
+.page-title span{color:var(--text2);font-weight:400;font-size:14px;margin-left:6px;}
+.navbar-spacer{flex:1;}
+.nav-filter{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:6px 12px;
+  font-size:12.5px;color:var(--text2);cursor:pointer;
+  transition:all var(--transition);
+}
+.nav-filter:hover{border-color:var(--accent);color:var(--text);}
+.nav-filter select{
+  background:none;border:none;outline:none;color:inherit;
+  font-family:'DM Sans',sans-serif;font-size:12.5px;cursor:pointer;
+}
+.search-bar{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:6px 14px;
+  transition:all var(--transition);
+}
+.search-bar:focus-within{border-color:var(--accent);}
+.search-bar input{
+  background:none;border:none;outline:none;color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:12.5px;width:160px;
+}
+.search-bar input::placeholder{color:var(--text3);}
+.theme-toggle{
+  width:34px;height:34px;border-radius:var(--radius-sm);
+  background:var(--card);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:15px;transition:all var(--transition);
+}
+.theme-toggle:hover{border-color:var(--accent);}
+
+/* ─────────────────────────────────────────
+   MAIN CONTENT
+───────────────────────────────────────── */
+.main{
+  margin-left:var(--sidebar);
+  padding-top:60px;
+  min-height:100vh;
+}
+.page{
+  padding:28px 28px;
+  display:none;
+  animation:fadeIn .3s ease;
+}
+.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;
+}
+.section-title{
+  font-family:'Syne',sans-serif;font-size:16px;font-weight:700;
+}
+.section-sub{font-size:12px;color:var(--text3);margin-top:3px;}
+
+/* ─────────────────────────────────────────
+   KPI CARDS
+───────────────────────────────────────── */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;margin-bottom:24px;
+}
+.kpi-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px 22px;
+  position:relative;overflow:hidden;
+  transition:transform var(--transition),box-shadow var(--transition);
+  cursor:default;
+}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.kpi-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+}
+.kpi-card.pos::before{background:linear-gradient(90deg,var(--pos),transparent);}
+.kpi-card.neg::before{background:linear-gradient(90deg,var(--neg),transparent);}
+.kpi-card.neu::before{background:linear-gradient(90deg,var(--neu),transparent);}
+.kpi-card.blue::before{background:linear-gradient(90deg,var(--accent),transparent);}
+
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.kpi-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.kpi-card.pos .kpi-icon{background:var(--pos-bg);}
+.kpi-card.neg .kpi-icon{background:var(--neg-bg);}
+.kpi-card.neu .kpi-icon{background:var(--neu-bg);}
+.kpi-card.blue .kpi-icon{background:var(--accent-glow);}
+.kpi-badge{
+  font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:20px;
+}
+.kpi-card.pos .kpi-badge{background:var(--pos-bg);color:var(--pos);}
+.kpi-card.neg .kpi-badge{background:var(--neg-bg);color:var(--neg);}
+.kpi-card.neu .kpi-badge{background:var(--neu-bg);color:var(--neu);}
+.kpi-card.blue .kpi-badge{background:var(--accent-glow);color:var(--accent);}
+.kpi-val{
+  font-family:'Syne',sans-serif;font-size:32px;font-weight:800;
+  line-height:1;margin-bottom:4px;
+}
+.kpi-label{font-size:12px;color:var(--text2);font-weight:500;}
+.kpi-trend{font-size:11px;color:var(--text3);margin-top:8px;}
+
+/* ─────────────────────────────────────────
+   GRID LAYOUTS
+───────────────────────────────────────── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px;}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;}
+
+/* ─────────────────────────────────────────
+   CHART CARDS
+───────────────────────────────────────── */
+.chart-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:22px;
+  transition:border-color var(--transition);
+}
+.chart-card:hover{border-color:var(--border2);}
+.chart-card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:18px;
+}
+.chart-title{font-family:'Syne',sans-serif;font-size:13.5px;font-weight:700;}
+.chart-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.chart-actions{display:flex;gap:6px;}
+.chip{
+  font-size:10.5px;padding:4px 10px;border-radius:20px;
+  border:1px solid var(--border2);color:var(--text2);
+  cursor:pointer;transition:all var(--transition);background:var(--card2);
+}
+.chip:hover,.chip.active{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);}
+.chart-wrap{position:relative;}
+
+/* ─────────────────────────────────────────
+   DATA TABLE
+───────────────────────────────────────── */
+.data-table-wrap{overflow-x:auto;border-radius:var(--radius-sm);}
+.data-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.data-table th{
+  padding:10px 14px;text-align:left;
+  color:var(--text3);font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:600;
+  border-bottom:1px solid var(--border);white-space:nowrap;
+}
+.data-table td{
+  padding:11px 14px;border-bottom:1px solid var(--border);
+  color:var(--text2);vertical-align:middle;
+}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--card2);color:var(--text);}
+.data-table tbody tr{transition:background var(--transition);}
+
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;
+}
+.badge.pos{background:var(--pos-bg);color:var(--pos);}
+.badge.neg{background:var(--neg-bg);color:var(--neg);}
+.badge.neu{background:var(--neu-bg);color:var(--neu);}
+.badge.info{background:var(--accent-glow);color:var(--accent);}
+
+.rating-bar{
+  display:flex;align-items:center;gap:8px;
+}
+.bar-track{
+  flex:1;height:5px;background:var(--border2);border-radius:3px;overflow:hidden;
+}
+.bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+
+/* ─────────────────────────────────────────
+   ALERT CARDS
+───────────────────────────────────────── */
+.alert-list{display:flex;flex-direction:column;gap:10px;}
+.alert-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;border-radius:var(--radius-sm);
+  border:1px solid;animation:slideIn .3s ease both;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);}}
+.alert-item.critical{background:rgba(248,113,113,.07);border-color:rgba(248,113,113,.25);}
+.alert-item.warning{background:rgba(251,191,36,.07);border-color:rgba(251,191,36,.25);}
+.alert-item.stable{background:rgba(52,211,153,.07);border-color:rgba(52,211,153,.25);}
+.alert-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;
+}
+.alert-item.critical .alert-dot{background:var(--neg);}
+.alert-item.warning .alert-dot{background:var(--neu);}
+.alert-item.stable .alert-dot{background:var(--pos);}
+.alert-icon{font-size:18px;flex-shrink:0;}
+.alert-body{}
+.alert-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+.alert-item.critical .alert-title{color:var(--neg);}
+.alert-item.warning .alert-title{color:var(--neu);}
+.alert-item.stable .alert-title{color:var(--pos);}
+.alert-desc{font-size:11.5px;color:var(--text3);}
+.alert-meta{font-size:10.5px;color:var(--text3);margin-top:4px;}
+
+/* ─────────────────────────────────────────
+   AI SUMMARY CARDS
+───────────────────────────────────────── */
+.ai-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.ai-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:22px;
+  position:relative;overflow:hidden;
+  transition:transform var(--transition),box-shadow var(--transition);
+}
+.ai-card:hover{transform:translateY(-2px);}
+.ai-card::after{
+  content:'';position:absolute;bottom:-30px;right:-30px;
+  width:100px;height:100px;border-radius:50%;opacity:.06;
+}
+.ai-card.strengths::after{background:var(--pos);}
+.ai-card.problems::after{background:var(--neg);}
+.ai-card.suggestions::after{background:var(--accent);}
+.ai-card-icon{font-size:26px;margin-bottom:12px;}
+.ai-card-title{
+  font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+  margin-bottom:14px;
+}
+.ai-card.strengths .ai-card-title{color:var(--pos);}
+.ai-card.problems .ai-card-title{color:var(--neg);}
+.ai-card.suggestions .ai-card-title{color:var(--accent);}
+.ai-point{
+  display:flex;align-items:flex-start;gap:8px;
+  font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5;
+}
+.ai-bullet{
+  width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:6px;
+}
+.ai-card.strengths .ai-bullet{background:var(--pos);}
+.ai-card.problems .ai-bullet{background:var(--neg);}
+.ai-card.suggestions .ai-bullet{background:var(--accent);}
+
+.ai-generate-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;border:none;padding:10px 20px;border-radius:var(--radius-sm);
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all var(--transition);
+}
+.ai-generate-btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 20px rgba(91,140,248,.35);}
+.ai-generate-btn:active{transform:translateY(0);}
+
+/* ─────────────────────────────────────────
+   TOPIC CARDS
+───────────────────────────────────────── */
+.topic-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.topic-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:16px 18px;
+  transition:all var(--transition);cursor:default;
+}
+.topic-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.topic-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.topic-label{font-size:13px;font-weight:600;}
+.topic-pct{
+  font-family:'Syne',sans-serif;font-size:20px;font-weight:800;
+  color:var(--accent);
+}
+.topic-bar-track{height:4px;background:var(--border2);border-radius:2px;overflow:hidden;}
+.topic-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+
+/* ─────────────────────────────────────────
+   WORD CLOUD
+───────────────────────────────────────── */
+.wordcloud{
+  display:flex;flex-wrap:wrap;align-items:center;
+  gap:8px;padding:10px;
+}
+.word-item{
+  padding:5px 12px;border-radius:20px;
+  background:var(--card2);border:1px solid var(--border2);
+  color:var(--text2);cursor:default;
+  transition:all var(--transition);
+  white-space:nowrap;
+}
+.word-item:hover{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);}
+
+/* ─────────────────────────────────────────
+   FEEDBACK EXPLORER
+───────────────────────────────────────── */
+.filter-bar{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  margin-bottom:20px;
+}
+.filter-select{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:8px 14px;
+  color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12.5px;
+  cursor:pointer;outline:none;transition:all var(--transition);
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2350616f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
+  padding-right:28px;
+}
+.filter-select:focus{border-color:var(--accent);}
+.comment-text{max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);font-size:12px;}
+.comment-full{
+  display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:var(--radius);padding:28px;max-width:520px;width:90%;
+  z-index:200;box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:199;
+}
+.overlay.show,.comment-full.show{display:block;}
+.close-btn{
+  float:right;background:none;border:none;color:var(--text3);
+  font-size:18px;cursor:pointer;padding:0 4px;
+  transition:color var(--transition);
+}
+.close-btn:hover{color:var(--text);}
+
+/* ─────────────────────────────────────────
+   SCROLLBAR
+───────────────────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text3);}
+
+/* ─────────────────────────────────────────
+   LOADING PULSE
+───────────────────────────────────────── */
+.pulse{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--pos);animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(.8);opacity:.6;}50%{transform:scale(1.2);opacity:1;}}
+
+/* ─────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────── */
+@media(max-width:1100px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .grid-2{grid-template-columns:1fr;}
+  .ai-summary-grid{grid-template-columns:1fr;}
+}
+@media(max-width:768px){
+  :root{--sidebar:0px;}
+  .sidebar{transform:translateX(-100%);}
+  .navbar{left:0;}
+  .main{margin-left:0;}
+}
+
+/* ─────────────────────────────────────────
+   MISC UTILITIES
+───────────────────────────────────────── */
+.divider{height:1px;background:var(--border);margin:20px 0;}
+.text-accent{color:var(--accent);}
+.text-pos{color:var(--pos);}
+.text-neg{color:var(--neg);}
+.text-neu{color:var(--neu);}
+.text-muted{color:var(--text3);}
+.font-syne{font-family:'Syne',sans-serif;}
+.fw-700{font-weight:700;}
+.mb-16{margin-bottom:16px;}
+.mb-20{margin-bottom:20px;}
+.flex{display:flex;}
+.flex-center{display:flex;align-items:center;justify-content:center;}
+.gap-8{gap:8px;}
+.w-full{width:100%;}
+
+/* Faculty dashboard role toggle */
+.role-toggle{
+  display:flex;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:3px;gap:3px;
+}
+.role-btn{
+  padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;
+  border:none;background:none;color:var(--text2);cursor:pointer;
+  transition:all var(--transition);
+}
+.role-btn.active{background:var(--accent);color:#fff;}
+
+/* Stat mini */
+.mini-stat{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.mini-stat:last-child{border-bottom:none;}
+.mini-stat-label{font-size:12.5px;color:var(--text2);}
+.mini-stat-val{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+
+/* Highlight number */
+.hl{color:var(--accent);}
+
+/* Login page */
+.login-page{
+  display:none;position:fixed;inset:0;
+  background:var(--bg);z-index:1000;
+  align-items:center;justify-content:center;
+}
+.login-page.show{display:flex;}
+.login-box{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:40px 44px;width:420px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo .logo-icon{margin:0 auto 12px;width:52px;height:52px;border-radius:14px;font-size:20px;}
+.login-logo h1{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+.login-logo p{font-size:12px;color:var(--text3);margin-top:4px;}
+.form-group{margin-bottom:16px;}
+.form-label{font-size:12px;color:var(--text2);font-weight:600;margin-bottom:6px;display:block;}
+.form-input{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:11px 14px;
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;
+  outline:none;transition:border-color var(--transition);
+}
+.form-input:focus{border-color:var(--accent);}
+.login-btn{
+  width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;border-radius:var(--radius-sm);padding:12px;
+  color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all var(--transition);margin-top:8px;
+}
+.login-btn:hover{opacity:.9;transform:translateY(-1px);}
+.login-roles{
+  display:flex;gap:8px;margin-bottom:16px;
+}
+.role-opt{
+  flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  text-align:center;cursor:pointer;transition:all var(--transition);
+  font-size:12px;font-weight:600;color:var(--text2);
+}
+.role-opt:hover,.role-opt.selected{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);}
+
+/* Anonymous note */
+.anon-note{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(91,140,248,.08);border:1px solid rgba(91,140,248,.2);
+  border-radius:var(--radius-sm);padding:10px 14px;
+  font-size:11.5px;color:var(--text2);margin-bottom:20px;
+}
+
+/* Pagination */
+.pagination{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--text3);
+}
+.page-btns{display:flex;gap:6px;}
+.page-btn{
+  width:30px;height:30px;border-radius:var(--radius-sm);
+  background:var(--card2);border:1px solid var(--border);
+  color:var(--text2);font-size:12px;cursor:pointer;
+  transition:all var(--transition);display:flex;align-items:center;justify-content:center;
+}
+.page-btn:hover,.page-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ─────────────────────────── -->
+<div class="login-page show" id="loginPage">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-icon">EF</div>
+      <h1>ED-<span style="color:var(--accent)">FEED</span></h1>
+      <p>Student Feedback Analytics Platform</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Select Role</label>
+      <div class="login-roles">
+        <div class="role-opt selected" onclick="selectRole(this,'admin')">🏛️ Admin</div>
+        <div class="role-opt" onclick="selectRole(this,'faculty')">👨‍🏫 Faculty</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <input class="form-input" type="email" placeholder="admin@edfeed.edu" id="loginEmail"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" type="password" placeholder="••••••••" id="loginPass"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In to Dashboard</button>
+  </div>
+</div>
+
+<!-- ── SIDEBAR ───────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">EF</div>
+      <div>
+        <div class="logo-text">ED-<span>FEED</span></div>
+        <div class="logo-sub">Student Feedback Analytics</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section-label">Main</div>
+    <div class="nav-item active" onclick="showPage('home',this)">
+      <span class="nav-icon">⬡</span> Dashboard Home
+    </div>
+    <div class="nav-item" onclick="showPage('sentiment',this)">
+      <span class="nav-icon">◎</span> Sentiment Analysis
+    </div>
+    <div class="nav-item" onclick="showPage('topics',this)">
+      <span class="nav-icon">⧫</span> Topic Analysis
+    </div>
+    <div class="nav-item" onclick="showPage('faculty',this)">
+      <span class="nav-icon">⊞</span> Faculty Comparison
+    </div>
+    <div class="nav-section-label">Insights</div>
+    <div class="nav-item" onclick="showPage('alerts',this)">
+      <span class="nav-icon">⚑</span> Alerts
+      <span class="nav-badge">8</span>
+    </div>
+    <div class="nav-item" onclick="showPage('aisummary',this)">
+      <span class="nav-icon">✦</span> AI Summary
+    </div>
+    <div class="nav-section-label">Data</div>
+    <div class="nav-item" onclick="showPage('explorer',this)">
+      <span class="nav-icon">≡</span> Feedback Explorer
+    </div>
+    <div class="nav-item" onclick="showPage('settings',this)">
+      <span class="nav-icon">⚙</span> Settings
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar" id="userAvatar">A</div>
+      <div>
+        <div class="user-name" id="userName">Admin User</div>
+        <div class="user-role" id="userRole">Administrator</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── NAVBAR ────────────────────────── -->
+<header class="navbar">
+  <div class="page-title" id="pageTitle">Dashboard <span>Home</span></div>
+  <div class="navbar-spacer"></div>
+  <div class="nav-filter">
+    <span>🗓</span>
+    <select onchange="filterData()" id="yearFilter">
+      <option value="all">All Years</option>
+      <option value="2018">2018</option>
+      <option value="2017">2017</option>
+      <option value="2016">2016</option>
+      <option value="2015">2015</option>
+      <option value="2014">2014</option>
+    </select>
+  </div>
+  <div class="nav-filter">
+    <span>🏛</span>
+    <select onchange="filterData()" id="deptFilter">
+      <option value="all">All Departments</option>
+      <option>English Department</option>
+      <option>Mathematics Department</option>
+      <option>Psychology Department</option>
+      <option>Biology Department</option>
+      <option>History Department</option>
+      <option>Computer Science Department</option>
+      <option>Communication Department</option>
+      <option>Business Department</option>
+    </select>
+  </div>
+  <div class="search-bar">
+    <span>🔍</span>
+    <input type="text" placeholder="Search feedback..." id="searchInput" oninput="searchFeedback()"/>
+  </div>
+  <div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</div>
+</header>
+
+<!-- ══════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════ -->
+<main class="main">
+
+<!-- ─── HOME ───────────────────────── -->
+<section class="page active" id="page-home">
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-top">
+        <div class="kpi-icon">📋</div>
+        <div class="kpi-badge">↑ 2.3%</div>
+      </div>
+      <div class="kpi-val" id="kpi-total">19,981</div>
+      <div class="kpi-label">Total Feedback Received</div>
+      <div class="kpi-trend"><span class="pulse"></span> Live dataset · 19,981 entries</div>
+    </div>
+    <div class="kpi-card pos">
+      <div class="kpi-top">
+        <div class="kpi-icon">😊</div>
+        <div class="kpi-badge">↑ 4.1%</div>
+      </div>
+      <div class="kpi-val text-pos" id="kpi-pos">59.1%</div>
+      <div class="kpi-label">Positive Sentiment</div>
+      <div class="kpi-trend">11,807 positive responses</div>
+    </div>
+    <div class="kpi-card neg">
+      <div class="kpi-top">
+        <div class="kpi-icon">😟</div>
+        <div class="kpi-badge">↓ 1.2%</div>
+      </div>
+      <div class="kpi-val text-neg" id="kpi-neg">28.4%</div>
+      <div class="kpi-label">Negative Sentiment</div>
+      <div class="kpi-trend">5,669 negative responses</div>
+    </div>
+    <div class="kpi-card neu">
+      <div class="kpi-top">
+        <div class="kpi-icon">⭐</div>
+        <div class="kpi-badge">→ Stable</div>
+      </div>
+      <div class="kpi-val text-neu" id="kpi-rating">3.64</div>
+      <div class="kpi-label">Average Star Rating</div>
+      <div class="kpi-trend">Out of 5.0 · across all faculty</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Sentiment Distribution</div>
+          <div class="chart-sub">Overall breakdown · 19,981 responses</div>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:220px;display:flex;align-items:center;justify-content:center;">
+        <canvas id="sentPieChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Yearly Sentiment Trend</div>
+          <div class="chart-sub">Positive vs Negative over time</div>
+        </div>
+        <div class="chart-actions">
+          <div class="chip active">2014–2018</div>
+          <div class="chip">All Time</div>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="trendLineChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Department Breakdown</div>
+          <div class="chart-sub">Sentiment by top departments</div>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:240px;">
+        <canvas id="deptBarChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-title">Difficulty Distribution</div>
+          <div class="chart-sub">How students rate course difficulty</div>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:240px;display:flex;align-items:center;justify-content:center;">
+        <canvas id="diffDonutChart"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SENTIMENT ──────────────────── -->
+<section class="page" id="page-sentiment">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Sentiment Analysis</div>
+      <div class="section-sub">Deep dive into student feedback sentiment</div>
+    </div>
+  </div>
+
+  <div class="grid-2 mb-20">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div><div class="chart-title">Sentiment Pie</div></div>
+      </div>
+      <div class="chart-wrap" style="height:250px;display:flex;align-items:center;justify-content:center;">
+        <canvas id="sentPieChart2"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div><div class="chart-title">Sentiment Score Trend</div><div class="chart-sub">Year-by-year movement</div></div>
+      </div>
+      <div style="height:250px;">
+        <canvas id="trendLineChart2"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card mb-20">
+    <div class="chart-card-header">
+      <div><div class="chart-title">Department Sentiment Comparison</div><div class="chart-sub">Grouped by Positive / Neutral / Negative</div></div>
+    </div>
+    <div style="height:280px;">
+      <canvas id="deptGroupedChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div><div class="chart-title">Faculty Sentiment Table</div><div class="chart-sub">Top rated faculty · sorted by avg rating</div></div>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table" id="facultyTable">
+        <thead>
+          <tr>
+            <th>Faculty Name</th><th>Department</th>
+            <th>Positive %</th><th>Negative %</th>
+            <th>Avg Rating</th><th>Total Reviews</th>
+          </tr>
+        </thead>
+        <tbody id="facultyTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TOPICS ─────────────────────── -->
+<section class="page" id="page-topics">
+  <div class="section-header">
+    <div><div class="section-title">Topic Analysis</div><div class="section-sub">What students talk about most</div></div>
+  </div>
+
+  <div class="topic-grid mb-20" id="topicCards"></div>
+
+  <div class="grid-2">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div><div class="chart-title">Tag Distribution</div><div class="chart-sub">Top student-assigned professor tags</div></div>
+      </div>
+      <div style="height:260px;">
+        <canvas id="tagBarChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div><div class="chart-title">Word Cloud</div><div class="chart-sub">Most frequent words in feedback</div></div>
+      </div>
+      <div class="wordcloud" id="wordCloud" style="min-height:220px;"></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div><div class="chart-title">Topic Sentiment Breakdown</div></div>
+    </div>
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Topic / Tag</th><th>Positive</th><th>Neutral</th><th>Negative</th><th>Sentiment Bar</th></tr>
+        </thead>
+        <tbody id="topicSentTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FACULTY ────────────────────── -->
+<section class="page" id="page-faculty">
+  <div class="section-header">
+    <div><div class="section-title">Faculty Comparison</div></div>
+    <div class="role-toggle">
+      <button class="role-btn active" onclick="setRole('admin',this)">Admin View</button>
+      <button class="role-btn" onclick="setRole('faculty',this)">Faculty View</button>
+    </div>
+  </div>
+
+  <div class="chart-card mb-20">
+    <div class="chart-card-header">
+      <div><div class="chart-title">Faculty Rating Comparison</div><div class="chart-sub">Average star rating — top 10 faculty</div></div>
+    </div>
+    <div style="height:300px;">
+      <canvas id="facultyBarChart"></canvas>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div><div class="chart-title">Course Mode Split</div></div>
+      </div>
+      <div style="height:220px;display:flex;align-items:center;justify-content:center;">
+        <canvas id="modeChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div><div class="chart-title">Grade Distribution</div></div>
+      </div>
+      <div style="height:220px;">
+        <canvas id="gradeChart"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── ALERTS ─────────────────────── -->
+<section class="page" id="page-alerts">
+  <div class="section-header">
+    <div><div class="section-title">Smart Alerts</div><div class="section-sub">Automatic triggers based on threshold rules</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div class="chart-card mb-20">
+        <div class="chart-card-header">
+          <div class="chart-title">🔴 Critical Alerts</div>
+        </div>
+        <div class="alert-list" id="criticalAlerts"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-title">✅ Stable Departments</div>
+        </div>
+        <div class="alert-list" id="stableAlerts"></div>
+      </div>
+    </div>
+    <div>
+      <div class="chart-card mb-20">
+        <div class="chart-card-header">
+          <div class="chart-title">⚠️ Warning Alerts</div>
+        </div>
+        <div class="alert-list" id="warningAlerts"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-title">Alert Summary</div>
+        </div>
+        <div class="mini-stat"><span class="mini-stat-label">Critical issues</span><span class="mini-stat-val text-neg">4</span></div>
+        <div class="mini-stat"><span class="mini-stat-label">Warnings</span><span class="mini-stat-val text-neu">4</span></div>
+        <div class="mini-stat"><span class="mini-stat-label">Stable departments</span><span class="mini-stat-val text-pos">3</span></div>
+        <div class="mini-stat"><span class="mini-stat-label">Avg negative threshold</span><span class="mini-stat-val">40%</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── AI SUMMARY ─────────────────── -->
+<section class="page" id="page-aisummary">
+  <div class="section-header">
+    <div><div class="section-title">AI-Generated Insights</div><div class="section-sub">Powered by NLP pipeline · BERT sentiment analysis</div></div>
+    <button class="ai-generate-btn" onclick="refreshAI()">✦ Regenerate Insights</button>
+  </div>
+
+  <div class="anon-note">
+    🔒 All insights are generated on anonymized data. No student identifiers are used in AI processing.
+  </div>
+
+  <div class="ai-summary-grid">
+    <div class="ai-card strengths">
+      <div class="ai-card-icon">💪</div>
+      <div class="ai-card-title">Main Strengths</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Students consistently appreciate faculty who provide clear explanations and are accessible outside class hours.</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Practical, application-focused teaching styles receive significantly higher positive sentiment scores.</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Faculty rated "Inspirational" correlate with 78%+ positive feedback rate across all departments.</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Courses with "Gives Good Feedback" tag show the highest student engagement and retention signals.</div>
+    </div>
+    <div class="ai-card problems">
+      <div class="ai-card-icon">⚠️</div>
+      <div class="ai-card-title">Main Problems</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Computer Science and Economics departments show negative sentiment exceeding 39%, above the alert threshold.</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Repeated complaints about "tough grading" and lack of clarity in assignment expectations.</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Students report difficulty understanding lecture material when pacing is too fast, especially in STEM courses.</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Several departments show limited attendance flexibility, leading to frustration among working students.</div>
+    </div>
+    <div class="ai-card suggestions">
+      <div class="ai-card-icon">🚀</div>
+      <div class="ai-card-title">Suggested Improvements</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Establish peer-review programs for faculty in departments with >35% negative sentiment.</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Introduce standardized grading rubrics — especially for writing-heavy courses — to reduce grade-related complaints.</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Encourage office hours participation by tying availability scores to faculty review cycles.</div>
+      <div class="ai-point"><div class="ai-bullet"></div>Roll out hybrid teaching tools for departments with online student cohorts showing lower satisfaction.</div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <div><div class="chart-title">Model Insights — Tag Correlation with Positive Sentiment</div></div>
+    </div>
+    <div style="height:280px;">
+      <canvas id="aiCorrelChart"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ─── EXPLORER ────────────────────── -->
+<section class="page" id="page-explorer">
+  <div class="section-header">
+    <div><div class="section-title">Feedback Explorer</div><div class="section-sub">Browse anonymized student comments</div></div>
+  </div>
+
+  <div class="anon-note">
+    🔒 All student names and identifiers have been replaced with [NAME] to maintain full anonymity.
+  </div>
+
+  <div class="filter-bar">
+    <select class="filter-select" id="sentFilter" onchange="renderExplorer()">
+      <option value="all">All Sentiment</option>
+      <option value="Positive">Positive</option>
+      <option value="Neutral">Neutral</option>
+      <option value="Negative">Negative</option>
+    </select>
+    <select class="filter-select" id="deptFilter2" onchange="renderExplorer()">
+      <option value="all">All Departments</option>
+      <option>English Department</option>
+      <option>Mathematics Department</option>
+      <option>Psychology Department</option>
+      <option>Biology Department</option>
+      <option>History Department</option>
+      <option>Computer Science Department</option>
+      <option>Communication Department</option>
+      <option>Business Department</option>
+    </select>
+    <select class="filter-select" id="diffFilter" onchange="renderExplorer()">
+      <option value="all">All Difficulty</option>
+      <option>Easy</option>
+      <option>Moderate</option>
+      <option>Difficult</option>
+    </select>
+  </div>
+
+  <div class="chart-card" style="padding:0;">
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Department</th><th>Sentiment</th>
+            <th>Difficulty</th><th>Comment (click to expand)</th>
+          </tr>
+        </thead>
+        <tbody id="explorerTbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span id="pageInfo">Showing 1–15 of 50 entries</span>
+      <div class="page-btns" id="pageBtns"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SETTINGS ───────────────────── -->
+<section class="page" id="page-settings">
+  <div class="section-header">
+    <div><div class="section-title">Settings</div></div>
+  </div>
+  <div class="chart-card mb-20" style="max-width:560px;">
+    <div class="chart-title mb-16">Alert Thresholds</div>
+    <div class="mini-stat">
+      <span class="mini-stat-label">Negative sentiment alert threshold</span>
+      <span class="mini-stat-val">40%</span>
+    </div>
+    <div class="mini-stat">
+      <span class="mini-stat-label">Average rating alert below</span>
+      <span class="mini-stat-val">2.5 ★</span>
+    </div>
+    <div class="mini-stat">
+      <span class="mini-stat-label">Repeated complaint frequency</span>
+      <span class="mini-stat-val">3+ occurrences</span>
+    </div>
+  </div>
+  <div class="chart-card" style="max-width:560px;">
+    <div class="chart-title mb-16">Anonymity Settings</div>
+    <div class="mini-stat">
+      <span class="mini-stat-label">Student name masking</span>
+      <span class="mini-stat-val text-pos">Active ✓</span>
+    </div>
+    <div class="mini-stat">
+      <span class="mini-stat-label">Roll number masking</span>
+      <span class="mini-stat-val text-pos">Active ✓</span>
+    </div>
+    <div class="mini-stat">
+      <span class="mini-stat-label">Regex name replacement</span>
+      <span class="mini-stat-val text-pos">Active ✓</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- Comment modal -->
+<div class="overlay" id="overlay" onclick="closeModal()"></div>
+<div class="comment-full" id="commentModal">
+  <button class="close-btn" onclick="closeModal()">✕</button>
+  <div style="margin-bottom:12px;">
+    <span class="badge" id="modalBadge"></span>
+    <span style="font-size:11px;color:var(--text3);margin-left:8px;" id="modalMeta"></span>
+  </div>
+  <p style="font-size:13.5px;line-height:1.7;color:var(--text2);" id="modalComment"></p>
+</div>
+
+<!-- ══════════════════════════════════
+     SCRIPTS
+══════════════════════════════════ -->
+<script>
+/* ─────────── DATA ─────────────────── */
+const DATA = {
+  total: 19981,
+  positive: 11807,
+  negative: 5669,
+  neutral: 2505,
+  avgRating: 3.64,
+  yearlyTrend: {
+    labels: ['2014','2015','2016','2017','2018'],
+    positive: [519,536,721,642,245],
+    neutral:  [146,165,133,117,41],
+    negative: [310,302,317,307,119]
+  },
+  departments: {
+    labels: ['English','Mathematics','Psychology','Biology','History','CS','Communication','Business'],
+    positive: [1414,950,778,666,589,388,472,435],
+    neutral:  [272,222,162,143,155,66,93,98],
+    negative: [574,597,396,268,306,258,193,170]
+  },
+  difficulty: {Easy:7266, Moderate:5377, Difficult:7338},
+  faculty: [
+    {name:'Jason Sloan',dept:'Interaction Design',rating:5.0,pos:100,neg:0,total:20},
+    {name:'Richard Burns',dept:'Mathematics',rating:5.0,pos:100,neg:0,total:20},
+    {name:'Rob Wells',dept:'Communication',rating:5.0,pos:100,neg:0,total:20},
+    {name:'Richard Curtis',dept:'Anthropology',rating:5.0,pos:100,neg:0,total:20},
+    {name:'Carol Topping',dept:'Psychology',rating:5.0,pos:100,neg:0,total:20},
+    {name:'Deborah Farrer',dept:'Education',rating:5.0,pos:100,neg:0,total:20},
+    {name:'Beth Hilburn',dept:'History',rating:4.9,pos:95,neg:0,total:20},
+    {name:'John Constantino',dept:'History',rating:4.9,pos:95,neg:0,total:20},
+    {name:'Alan Bell',dept:'Mathematics',rating:4.6,pos:84.2,neg:5.3,total:38},
+    {name:'Leslie Looney',dept:'Astronomy',rating:4.7,pos:80,neg:10,total:20},
+  ],
+  tags: {
+    labels:['Gives Good Feedback','Respected','Caring','Get Ready to Read','Participation Matters','Clear Grading','Amazing Lectures','Inspirational','Lots of HW','Hilarious'],
+    counts:[6058,5594,5290,5273,4978,4456,4009,3962,3200,2800]
+  },
+  wordcloud:[
+    ['easy',3522,18],['great',3405,17],['really',3365,16],['good',3035,15],
+    ['hard',2637,14],['students',2633,14],['tests',2595,14],['work',2191,13],
+    ['help',2030,13],['best',1954,12],['time',1918,12],['lectures',1804,11],
+    ['nice',1763,11],['helpful',1735,11],['interesting',1561,10],
+    ['makes',1557,10],['classes',1448,10],['material',1374,10],
+    ['grade',1369,9],['study',1337,9],['learn',1328,9],['always',1284,9],
+    ['questions',1383,10],['take',4281,22],['will',3670,20],
+  ],
+  feedback: [
+    {date:'2017-06-27',dept:'Astronomy Department',sent:'Positive',diff:'Moderate',comment:'This class is hard, but its a two-in-one gen-ed knockout, and the content is very stimulating. Unlike most classes, you have to actually participate to pass. Very funny dude.'},
+    {date:'2016-03-15',dept:'English Department',sent:'Negative',diff:'Difficult',comment:'The grading is inconsistent and the feedback on essays is minimal. I never knew why I got the grade I did, which made it impossible to improve throughout the semester.'},
+    {date:'2015-09-01',dept:'Mathematics Department',sent:'Positive',diff:'Easy',comment:'Best math professor I have had. Makes everything click with real-world examples. Office hours are actually useful and the [NAME] is very approachable.'},
+    {date:'2018-02-10',dept:'Computer Science Department',sent:'Negative',diff:'Difficult',comment:'The assignments are way too ambiguous. There is no clear rubric and the grading is harsh. I spent 20+ hours on an assignment and still failed because the expectations were unclear.'},
+    {date:'2017-11-12',dept:'Psychology Department',sent:'Positive',diff:'Moderate',comment:'This professor makes psychology feel relevant to everyday life. The lectures are engaging and the discussions are thought-provoking. Would absolutely take another course.'},
+    {date:'2016-07-20',dept:'Biology Department',sent:'Neutral',diff:'Difficult',comment:'The class is challenging but fair. Sometimes the pace is a bit fast and it is hard to keep up with all the reading. The lab sessions are helpful though.'},
+    {date:'2015-05-11',dept:'History Department',sent:'Positive',diff:'Moderate',comment:'Incredible storyteller. Brings history to life in a way textbooks never could. The primary source analysis assignments were tough but very rewarding.'},
+    {date:'2014-10-08',dept:'Communication Department',sent:'Neutral',diff:'Easy',comment:'Decent class overall. The presentations are a bit repetitive but the professor is kind and the content is manageable. Tests are straightforward if you attend lectures.'},
+    {date:'2017-03-22',dept:'Business Department',sent:'Negative',diff:'Moderate',comment:'The curve system is confusing and seems arbitrary. Many students including myself felt the grading did not reflect the effort put in.'},
+    {date:'2016-01-05',dept:'Mathematics Department',sent:'Positive',diff:'Easy',comment:'Absolutely brilliant at breaking down complex calculus concepts. I came in dreading this class and left with genuine enthusiasm for math. The practice tests mirror the actual exams perfectly.'},
+    {date:'2015-08-17',dept:'English Department',sent:'Positive',diff:'Moderate',comment:'The reading list was extensive but every book was worth it. Seminar discussions are the highlight — [NAME] pushes you to think critically without ever making you feel judged.'},
+    {date:'2014-04-29',dept:'Computer Science Department',sent:'Positive',diff:'Difficult',comment:'Challenging course but you learn more here than in any other CS class. The projects are real-world scenarios and the professor is always willing to guide you through debugging.'},
+    {date:'2018-01-15',dept:'Psychology Department',sent:'Negative',diff:'Difficult',comment:'The exams are heavily based on specific textbook phrasing which punishes students who understand the concept but express it differently. Felt like a memorization course.'},
+    {date:'2017-09-07',dept:'Biology Department',sent:'Positive',diff:'Moderate',comment:'The field trips to the lab really help cement the lecture material. [NAME] is enthusiastic and it is contagious. Great office hours and quick email responses.'},
+    {date:'2016-12-01',dept:'History Department',sent:'Neutral',diff:'Easy',comment:'Not the most engaging delivery style but the content itself is interesting. Tests are fair and the paper rubric is clear. Solid course overall.'},
+    {date:'2015-03-18',dept:'Communication Department',sent:'Positive',diff:'Easy',comment:'Super organized and clear about expectations from day one. The group projects are actually enjoyable and prepare you for real team communication scenarios.'},
+    {date:'2014-11-22',dept:'Business Department',sent:'Positive',diff:'Moderate',comment:'Best business ethics class at this school. The case studies are current and the debates are genuinely stimulating. [NAME] brings real industry perspective.'},
+    {date:'2017-04-04',dept:'English Department',sent:'Negative',diff:'Difficult',comment:'The feedback on papers comes back two weeks late which makes it impossible to improve for the next assignment. Grading feels very subjective with little explanation.'},
+    {date:'2016-06-09',dept:'Mathematics Department',sent:'Neutral',diff:'Moderate',comment:'Does a decent job explaining but moves too fast during proofs. The homework is useful but the exams feel disconnected from what was covered in class.'},
+    {date:'2015-10-30',dept:'Astronomy Department',sent:'Positive',diff:'Easy',comment:'A perfect gen-ed pick. Interesting content, flexible grading, and the telescope observation nights are an absolute highlight. The professor makes science accessible to everyone.'},
+    {date:'2014-07-14',dept:'Psychology Department',sent:'Positive',diff:'Easy',comment:'This professor genuinely cares about student progress. The course is well-structured and the feedback on assignments helps you actually grow. Highly recommend.'},
+    {date:'2018-03-05',dept:'Computer Science Department',sent:'Neutral',diff:'Difficult',comment:'The material is challenging and relevant. Could use more worked examples in lectures. The TAs are hit-or-miss in terms of helpfulness during office hours.'},
+    {date:'2017-08-19',dept:'Biology Department',sent:'Negative',diff:'Difficult',comment:'Grading criteria changes between semesters. What counted for full credit last term was docked points this term with no explanation. Inconsistency makes it stressful.'},
+    {date:'2016-02-28',dept:'History Department',sent:'Positive',diff:'Moderate',comment:'One of the most nuanced teachers of American history. Challenges you to see multiple perspectives rather than accepting a single narrative. The essays really develop your thinking.'},
+    {date:'2015-12-10',dept:'English Department',sent:'Positive',diff:'Moderate',comment:'Writing workshops are invaluable. [NAME] creates a safe space to experiment with style and receive honest peer feedback. This class made me a significantly better writer.'},
+    {date:'2014-09-03',dept:'Communication Department',sent:'Negative',diff:'Moderate',comment:'Attendance policy is extremely strict with no consideration for emergencies. Missing one class drops your grade significantly which discourages many students.'},
+    {date:'2017-01-25',dept:'Business Department',sent:'Neutral',diff:'Easy',comment:'Marketing principles are well-taught but the course feels a bit outdated in terms of digital marketing examples. Would benefit from more current case studies.'},
+    {date:'2016-08-14',dept:'Mathematics Department',sent:'Positive',diff:'Difficult',comment:'Demanding but fair. The difficulty makes you actually learn the material deeply. By the end of the course I could solve problems I never thought I was capable of.'},
+    {date:'2015-06-20',dept:'Astronomy Department',sent:'Positive',diff:'Easy',comment:'Perfect course for non-science majors. Approachable content, engaging demonstrations, and the optional star-gazing sessions add a magical dimension to the coursework.'},
+    {date:'2014-05-07',dept:'Psychology Department',sent:'Negative',diff:'Difficult',comment:'The reading volume is unmanageable — 150+ pages per week on top of three other demanding courses. The workload is disproportionate to the credit hours.'},
+  ]
+};
+
+let currentPage = 1;
+const itemsPerPage = 15;
+let filteredFeedback = [...DATA.feedback];
+let charts = {};
+
+/* ─────────── LOGIN ────────────────── */
+let selectedRole = 'admin';
+function selectRole(el, role) {
+  document.querySelectorAll('.role-opt').forEach(r=>r.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedRole = role;
+}
+function doLogin() {
+  const email = document.getElementById('loginEmail').value || 'admin@edfeed.edu';
+  document.getElementById('loginPage').classList.remove('show');
+  if(selectedRole === 'faculty') {
+    document.getElementById('userName').textContent = 'Faculty User';
+    document.getElementById('userRole').textContent = 'Faculty Member';
+    document.getElementById('userAvatar').textContent = 'F';
+  } else {
+    document.getElementById('userName').textContent = 'Admin User';
+    document.getElementById('userRole').textContent = 'Administrator';
+    document.getElementById('userAvatar').textContent = 'A';
+  }
+  initAllCharts();
+  renderFacultyTable();
+  renderTopics();
+  renderAlerts();
+  renderExplorer();
+  renderWordCloud();
+  renderTopicSentTable();
+  renderAICorr();
+}
+
+/* ─────────── PAGE NAV ─────────────── */
+const titles = {
+  home:'Dashboard <span>Home</span>',
+  sentiment:'Sentiment <span>Analysis</span>',
+  topics:'Topic <span>Analysis</span>',
+  faculty:'Faculty <span>Comparison</span>',
+  alerts:'Smart <span>Alerts</span>',
+  aisummary:'AI <span>Summary</span>',
+  explorer:'Feedback <span>Explorer</span>',
+  settings:'<span>Settings</span>'
+};
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('pageTitle').innerHTML = titles[id];
+}
+
+/* ─────────── CHART DEFAULTS ──────── */
+Chart.defaults.color = '#8896a8';
+Chart.defaults.borderColor = '#1e2733';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+const COLORS = {
+  pos:'#34d399',posA:'rgba(52,211,153,.2)',
+  neg:'#f87171',negA:'rgba(248,113,113,.2)',
+  neu:'#fbbf24',neuA:'rgba(251,191,36,.2)',
+  acc:'#5b8cf8',accA:'rgba(91,140,248,.2)',
+  acc2:'#7c5cfb'
+};
+
+function baseOpts(title=''){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{labels:{color:'#8896a8',boxWidth:12,padding:16}},
+      tooltip:{
+        backgroundColor:'#13181f',borderColor:'#1e2733',borderWidth:1,
+        titleColor:'#e8edf4',bodyColor:'#8896a8',padding:12,
+        callbacks:{}
+      },
+      title: title ? {display:true,text:title,color:'#e8edf4'} : {display:false}
+    }
+  };
+}
+
+function initAllCharts(){
+  // Destroy existing
+  Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}});
+  charts = {};
+
+  // — HOME PIE —
+  charts.pie = new Chart(document.getElementById('sentPieChart'),{
+    type:'doughnut',
+    data:{
+      labels:['Positive','Neutral','Negative'],
+      datasets:[{data:[DATA.positive,DATA.neutral,DATA.negative],backgroundColor:[COLORS.pos,COLORS.neu,COLORS.neg],borderWidth:2,borderColor:'#13181f',hoverOffset:6}]
+    },
+    options:{...baseOpts(),cutout:'68%',plugins:{...baseOpts().plugins,legend:{position:'bottom',labels:{color:'#8896a8',boxWidth:12,padding:14}}}}
+  });
+
+  // — HOME TREND LINE —
+  const td = DATA.yearlyTrend;
+  charts.trend = new Chart(document.getElementById('trendLineChart'),{
+    type:'line',
+    data:{
+      labels:td.labels,
+      datasets:[
+        {label:'Positive',data:td.positive,borderColor:COLORS.pos,backgroundColor:COLORS.posA,fill:true,tension:.4,pointRadius:4,pointBackgroundColor:COLORS.pos},
+        {label:'Neutral',data:td.neutral,borderColor:COLORS.neu,backgroundColor:COLORS.neuA,fill:true,tension:.4,pointRadius:4,pointBackgroundColor:COLORS.neu},
+        {label:'Negative',data:td.negative,borderColor:COLORS.neg,backgroundColor:COLORS.negA,fill:true,tension:.4,pointRadius:4,pointBackgroundColor:COLORS.neg},
+      ]
+    },
+    options:{...baseOpts(),scales:{x:{grid:{color:'#1e2733'}},y:{grid:{color:'#1e2733'}}}}
+  });
+
+  // — HOME DEPT BAR —
+  const dd = DATA.departments;
+  charts.dept = new Chart(document.getElementById('deptBarChart'),{
+    type:'bar',
+    data:{
+      labels:dd.labels,
+      datasets:[
+        {label:'Positive',data:dd.positive,backgroundColor:COLORS.posA,borderColor:COLORS.pos,borderWidth:1.5},
+        {label:'Negative',data:dd.negative,backgroundColor:COLORS.negA,borderColor:COLORS.neg,borderWidth:1.5},
+      ]
+    },
+    options:{...baseOpts(),scales:{x:{grid:{display:false},ticks:{maxRotation:30}},y:{grid:{color:'#1e2733'}}},barPercentage:.6}
+  });
+
+  // — HOME DIFFICULTY DONUT —
+  charts.diff = new Chart(document.getElementById('diffDonutChart'),{
+    type:'doughnut',
+    data:{
+      labels:['Easy','Moderate','Difficult'],
+      datasets:[{data:[DATA.difficulty.Easy,DATA.difficulty.Moderate,DATA.difficulty.Difficult],backgroundColor:[COLORS.pos,COLORS.neu,COLORS.neg],borderWidth:2,borderColor:'#13181f',hoverOffset:6}]
+    },
+    options:{...baseOpts(),cutout:'65%',plugins:{...baseOpts().plugins,legend:{position:'bottom',labels:{color:'#8896a8',boxWidth:12}}}}
+  });
+
+  // — SENTIMENT PAGE PIE —
+  charts.pie2 = new Chart(document.getElementById('sentPieChart2'),{
+    type:'doughnut',
+    data:{labels:['Positive','Neutral','Negative'],datasets:[{data:[DATA.positive,DATA.neutral,DATA.negative],backgroundColor:[COLORS.pos,COLORS.neu,COLORS.neg],borderWidth:2,borderColor:'#13181f',hoverOffset:6}]},
+    options:{...baseOpts(),cutout:'68%',plugins:{...baseOpts().plugins,legend:{position:'bottom'}}}
+  });
+
+  // — SENT TREND 2 —
+  charts.trend2 = new Chart(document.getElementById('trendLineChart2'),{
+    type:'line',
+    data:{labels:td.labels,datasets:[
+      {label:'Positive',data:td.positive,borderColor:COLORS.pos,backgroundColor:COLORS.posA,fill:true,tension:.4,pointRadius:4,pointBackgroundColor:COLORS.pos},
+      {label:'Negative',data:td.negative,borderColor:COLORS.neg,backgroundColor:COLORS.negA,fill:true,tension:.4,pointRadius:4,pointBackgroundColor:COLORS.neg},
+    ]},
+    options:{...baseOpts(),scales:{x:{grid:{color:'#1e2733'}},y:{grid:{color:'#1e2733'}}}}
+  });
+
+  // — DEPT GROUPED —
+  charts.deptGroup = new Chart(document.getElementById('deptGroupedChart'),{
+    type:'bar',
+    data:{labels:dd.labels,datasets:[
+      {label:'Positive',data:dd.positive,backgroundColor:COLORS.pos+'99',borderColor:COLORS.pos,borderWidth:1},
+      {label:'Neutral',data:dd.neutral,backgroundColor:COLORS.neu+'99',borderColor:COLORS.neu,borderWidth:1},
+      {label:'Negative',data:dd.negative,backgroundColor:COLORS.neg+'99',borderColor:COLORS.neg,borderWidth:1},
+    ]},
+    options:{...baseOpts(),scales:{x:{grid:{display:false}},y:{grid:{color:'#1e2733'}}},barPercentage:.7}
+  });
+
+  // — FACULTY BAR —
+  const topFac = DATA.faculty.slice(0,10);
+  charts.facBar = new Chart(document.getElementById('facultyBarChart'),{
+    type:'bar',
+    data:{
+      labels:topFac.map(f=>f.name.split(' ')[0]+' '+f.name.split(' ').pop()),
+      datasets:[
+        {label:'Avg Rating',data:topFac.map(f=>f.rating),backgroundColor:COLORS.accA,borderColor:COLORS.acc,borderWidth:1.5},
+        {label:'Positive %',data:topFac.map(f=>f.pos/20),backgroundColor:COLORS.posA,borderColor:COLORS.pos,borderWidth:1.5},
+      ]
+    },
+    options:{...baseOpts(),scales:{x:{grid:{display:false}},y:{grid:{color:'#1e2733'},max:6}},barPercentage:.65}
+  });
+
+  // — COURSE MODE —
+  charts.mode = new Chart(document.getElementById('modeChart'),{
+    type:'doughnut',
+    data:{labels:['Offline','Online'],datasets:[{data:[19579,402],backgroundColor:[COLORS.acc,COLORS.acc2],borderWidth:2,borderColor:'#13181f'}]},
+    options:{...baseOpts(),cutout:'65%',plugins:{...baseOpts().plugins,legend:{position:'bottom'}}}
+  });
+
+  // — GRADE —
+  charts.grade = new Chart(document.getElementById('gradeChart'),{
+    type:'bar',
+    data:{
+      labels:['A Range','B Range','C Range','D/F'],
+      datasets:[{label:'Students',data:[1871,827,245,57],backgroundColor:[COLORS.pos+'99',COLORS.neu+'99',COLORS.neg+'55',COLORS.neg+'99'],borderWidth:0}]
+    },
+    options:{...baseOpts(),indexAxis:'y',scales:{x:{grid:{color:'#1e2733'}},y:{grid:{display:false}}},plugins:{...baseOpts().plugins,legend:{display:false}}}
+  });
+
+  // — TAG BAR —
+  charts.tagBar = new Chart(document.getElementById('tagBarChart'),{
+    type:'bar',
+    data:{
+      labels:DATA.tags.labels,
+      datasets:[{label:'Count',data:DATA.tags.counts,backgroundColor:COLORS.accA,borderColor:COLORS.acc,borderWidth:1.5}]
+    },
+    options:{...baseOpts(),indexAxis:'y',scales:{x:{grid:{color:'#1e2733'}},y:{grid:{display:false}}},plugins:{...baseOpts().plugins,legend:{display:false}}}
+  });
+}
+
+/* ─────────── FACULTY TABLE ─────────── */
+function renderFacultyTable(){
+  const tbody = document.getElementById('facultyTbody');
+  tbody.innerHTML = DATA.faculty.map(f=>`
+    <tr>
+      <td><strong style="color:var(--text)">${f.name}</strong></td>
+      <td>${f.dept}</td>
+      <td>
+        <div class="rating-bar">
+          <div class="bar-track"><div class="bar-fill" style="width:${f.pos}%;background:var(--pos)"></div></div>
+          <span class="text-pos" style="min-width:38px;font-size:12px;font-weight:600">${f.pos}%</span>
+        </div>
+      </td>
+      <td><span class="text-neg">${f.neg}%</span></td>
+      <td>
+        <span style="font-family:'Syne',sans-serif;font-weight:700;color:${f.rating>=4.5?'var(--pos)':f.rating>=3?'var(--neu)':'var(--neg)'}">${f.rating.toFixed(1)} ★</span>
+      </td>
+      <td><span class="badge info">${f.total}</span></td>
+    </tr>
+  `).join('');
+}
+
+/* ─────────── TOPICS ──────────────── */
+function renderTopics(){
+  const topics = [
+    {label:'Teaching Quality',pct:42,icon:'🎓'},
+    {label:'Assignments',pct:25,icon:'📝'},
+    {label:'Exam Difficulty',pct:18,icon:'📊'},
+    {label:'Communication',pct:12,icon:'💬'},
+    {label:'Grading Fairness',pct:10,icon:'⚖️'},
+    {label:'Office Hours',pct:8,icon:'🕐'},
+  ];
+  document.getElementById('topicCards').innerHTML = topics.map(t=>`
+    <div class="topic-card">
+      <div class="topic-top">
+        <div class="topic-label">${t.icon} ${t.label}</div>
+        <div class="topic-pct">${t.pct}%</div>
+      </div>
+      <div class="topic-bar-track"><div class="topic-bar-fill" style="width:${t.pct}%"></div></div>
+    </div>
+  `).join('');
+}
+
+/* ─────────── WORD CLOUD ──────────── */
+function renderWordCloud(){
+  const max = DATA.wordcloud[0][1];
+  document.getElementById('wordCloud').innerHTML = DATA.wordcloud.map(([w,c,s])=>{
+    const ratio = c/max;
+    const size = 10 + ratio*16;
+    const opacity = 0.5 + ratio*0.5;
+    return `<div class="word-item" style="font-size:${size}px;opacity:${opacity}">${w}</div>`;
+  }).join('');
+}
+
+/* ─────────── TOPIC SENT TABLE ─────── */
+function renderTopicSentTable(){
+  const rows = [
+    {topic:'Teaching Quality',pos:70,neu:15,neg:15},
+    {topic:'Assignments',pos:40,neu:20,neg:40},
+    {topic:'Exam Difficulty',pos:35,neu:25,neg:40},
+    {topic:'Communication',pos:65,neu:20,neg:15},
+    {topic:'Grading Fairness',pos:45,neu:18,neg:37},
+    {topic:'Office Hours',pos:72,neu:16,neg:12},
+  ];
+  document.getElementById('topicSentTbody').innerHTML = rows.map(r=>`
+    <tr>
+      <td><strong style="color:var(--text)">${r.topic}</strong></td>
+      <td><span class="badge pos">${r.pos}%</span></td>
+      <td><span class="badge neu">${r.neu}%</span></td>
+      <td><span class="badge neg">${r.neg}%</span></td>
+      <td>
+        <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;width:160px;">
+          <div style="width:${r.pos}%;background:var(--pos)"></div>
+          <div style="width:${r.neu}%;background:var(--neu)"></div>
+          <div style="width:${r.neg}%;background:var(--neg)"></div>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+/* ─────────── ALERTS ──────────────── */
+function renderAlerts(){
+  const criticals = [
+    {title:'Italian Department — 88.9% Negative Sentiment',desc:'Far exceeds 40% threshold. Immediate faculty review recommended.',meta:'Trigger: Negative > 40%'},
+    {title:'Asian American Studies — 80.0% Negative',desc:'Consistently high complaints. Possible curriculum or delivery issue.',meta:'Trigger: Negative > 40%'},
+    {title:'African Studies — 78.9% Negative',desc:'Students report frustration with assignment clarity and pacing.',meta:'Trigger: Negative > 40%'},
+    {title:'Art Department — 58.8% Negative',desc:'Multiple repeated complaints about grading subjectivity.',meta:'Trigger: Repeated complaint pattern'},
+  ];
+  const warnings = [
+    {title:'Computer Science — 39.4% Negative',desc:'Approaching critical threshold. Ambiguous assignment expectations flagged.',meta:'Trigger: Negative approaching 40%'},
+    {title:'Economics — 41.6% Negative',desc:'Slightly above threshold. Grading curve confusion noted.',meta:'Trigger: Negative > 40%'},
+    {title:'Physics — 39.3% Negative',desc:'Exam difficulty complaints increasing year-over-year.',meta:'Trend: Rising negative sentiment'},
+    {title:'Writing Department — 36.5% Negative',desc:'Late feedback on papers is a recurring complaint.',meta:'Trigger: Repeated complaint pattern'},
+  ];
+  const stables = [
+    {title:'Communication Department — Only 25.5% Negative',desc:'Strong faculty approachability scores.'},
+    {title:'History Department — 29.1% Negative',desc:'Consistently good narrative teaching feedback.'},
+    {title:'English Department — 25.4% Negative',desc:'Writing workshop feedback highly positive.'},
+  ];
+  document.getElementById('criticalAlerts').innerHTML = criticals.map(a=>`
+    <div class="alert-item critical">
+      <div class="alert-dot"></div>
+      <div class="alert-body"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div><div class="alert-meta">${a.meta}</div></div>
+    </div>`).join('');
+  document.getElementById('warningAlerts').innerHTML = warnings.map(a=>`
+    <div class="alert-item warning">
+      <div class="alert-dot"></div>
+      <div class="alert-body"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div><div class="alert-meta">${a.meta}</div></div>
+    </div>`).join('');
+  document.getElementById('stableAlerts').innerHTML = stables.map(a=>`
+    <div class="alert-item stable">
+      <div class="alert-dot"></div>
+      <div class="alert-body"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div></div>
+    </div>`).join('');
+}
+
+/* ─────────── EXPLORER ────────────── */
+function renderExplorer(){
+  const sent = document.getElementById('sentFilter').value;
+  const dept = document.getElementById('deptFilter2').value;
+  const diff = document.getElementById('diffFilter').value;
+  const search = (document.getElementById('searchInput').value||'').toLowerCase();
+
+  filteredFeedback = DATA.feedback.filter(r=>{
+    if(sent !== 'all' && r.sent !== sent) return false;
+    if(dept !== 'all' && r.dept !== dept) return false;
+    if(diff !== 'all' && r.diff !== diff) return false;
+    if(search && !r.comment.toLowerCase().includes(search) && !r.dept.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  currentPage = 1;
+  renderExplorerPage();
+}
+
+function renderExplorerPage(){
+  const start = (currentPage-1)*itemsPerPage;
+  const end = Math.min(start+itemsPerPage, filteredFeedback.length);
+  const page = filteredFeedback.slice(start, end);
+
+  const sentClass = {Positive:'pos',Negative:'neg',Neutral:'neu'};
+  document.getElementById('explorerTbody').innerHTML = page.map((r,i)=>`
+    <tr>
+      <td style="white-space:nowrap;color:var(--text3)">${r.date}</td>
+      <td style="white-space:nowrap">${r.dept.replace(' Department','')}</td>
+      <td><span class="badge ${sentClass[r.sent]}">${r.sent}</span></td>
+      <td><span style="font-size:11.5px;color:var(--text3)">${r.diff}</span></td>
+      <td>
+        <div class="comment-text" onclick="openModal(${start+i})" style="cursor:pointer;color:var(--text2)">
+          ${r.comment.substring(0,80)}... <span style="color:var(--accent);font-size:11px">[expand]</span>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('pageInfo').textContent = `Showing ${start+1}–${end} of ${filteredFeedback.length} entries`;
+  renderPagination();
+}
+
+function renderPagination(){
+  const totalPages = Math.ceil(filteredFeedback.length / itemsPerPage);
+  const btns = document.getElementById('pageBtns');
+  btns.innerHTML = '';
+  for(let p=1;p<=Math.min(totalPages,6);p++){
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (p===currentPage?' active':'');
+    btn.textContent = p;
+    btn.onclick = ()=>{currentPage=p;renderExplorerPage();};
+    btns.appendChild(btn);
+  }
+}
+
+function openModal(idx){
+  const r = filteredFeedback[idx];
+  if(!r) return;
+  const sentClass = {Positive:'pos',Negative:'neg',Neutral:'neu'};
+  document.getElementById('modalBadge').className = 'badge '+sentClass[r.sent];
+  document.getElementById('modalBadge').textContent = r.sent;
+  document.getElementById('modalMeta').textContent = r.dept+' · '+r.date+' · '+r.diff;
+  document.getElementById('modalComment').textContent = r.comment;
+  document.getElementById('commentModal').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('commentModal').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+/* ─────────── AI CORR CHART ─────────── */
+function renderAICorr(){
+  charts.aiCorr = new Chart(document.getElementById('aiCorrelChart'),{
+    type:'bar',
+    data:{
+      labels:['Gives Good Feedback','Respected','Caring','Clear Grading','Inspirational','Amazing Lectures','Accessible Outside','Participation Matters'],
+      datasets:[{
+        label:'Correlation with Positive Sentiment (%)',
+        data:[82,78,75,71,85,80,73,68],
+        backgroundColor:[COLORS.acc+'99'],
+        borderColor:COLORS.acc,borderWidth:1.5,borderRadius:4
+      }]
+    },
+    options:{...baseOpts(),indexAxis:'y',scales:{x:{grid:{color:'#1e2733'},max:100},y:{grid:{display:false}}},plugins:{...baseOpts().plugins,legend:{display:false}}}
+  });
+}
+
+/* ─────────── ROLE TOGGLE ─────────── */
+function setRole(role,el){
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ─────────── FILTERS ──────────────── */
+function filterData(){ /* can wire to real backend */ }
+function searchFeedback(){
+  if(document.getElementById('page-explorer').classList.contains('active')) renderExplorer();
+}
+
+/* ─────────── THEME ───────────────── */
+function toggleTheme(){
+  document.body.style.filter = document.body.style.filter ? '' : 'invert(1) hue-rotate(180deg)';
+}
+
+/* ─────────── AI REFRESH ───────────── */
+function refreshAI(){
+  const btn = document.querySelector('.ai-generate-btn');
+  btn.textContent = '⟳ Regenerating...';
+  setTimeout(()=>{btn.textContent='✦ Regenerate Insights';},1800);
+}
+
+/* Enter key on login */
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && document.getElementById('loginPage').classList.contains('show')) doLogin();
+});
+</script>
+</body>
+</html>
