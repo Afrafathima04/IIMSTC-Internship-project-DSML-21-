@@ -27,8 +27,9 @@ export default function DashboardHome() {
 
       {/* KPI Cards */}
       <KPICards data={filteredData}/>
-      <PredictBox />  
-      <RecentFeedback />              
+      {userRole === "admin" ? <PredictBox /> : <RecentFeedback />}
+
+      {userRole === "admin" && <RecentFeedback />}
       {/* Main Charts Row */}
       <div className="grid gap-6 lg:grid-cols-2">
         <SentimentPieChart data={filteredData} />

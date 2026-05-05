@@ -147,7 +147,7 @@ export default function LoginPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
               <GraduationCap className="h-7 w-7 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">EDU-FEED</span>
+            <span className="text-2xl font-bold text-white">ED-FEED</span>
           </div>
 
           <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
@@ -204,7 +204,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-sm text-white/60">
-          © 2024 EDU-FEED. Empowering education through data-driven insights.
+          © 2024 ED-FEED. Empowering education through data-driven insights.
         </p>
       </div>
 

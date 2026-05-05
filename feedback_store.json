@@ -210,5 +210,105 @@
     "student_name": "Aish",
     "usn": "1ew22is",
     "email": "Something"
+  },
+  {
+    "comments": "Good teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Biochemistry Department",
+    "professor_name": "Alexander  Mcclung",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew2",
+    "email": "Trial"
+  },
+  {
+    "comments": "Very good teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Aviation Department",
+    "professor_name": "Alexandre  Avdulov",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew2",
+    "email": "Trial"
+  },
+  {
+    "comments": "Worst teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Aviation Department",
+    "professor_name": "Alexandre  Avdulov",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew2",
+    "email": "Trial"
+  },
+  {
+    "comments": "Worst Teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Astronomy Department",
+    "professor_name": "Alan  Cavaiola",
+    "star_rating": "5/5",
+    "student_name": "Aish",
+    "usn": "1ew2",
+    "email": "Trial"
+  },
+  {
+    "comments": "Worst Teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Astronomy Department",
+    "professor_name": "Alan  Cavaiola",
+    "star_rating": "1/5",
+    "student_name": "Aish",
+    "usn": "1ew2",
+    "email": "Trial"
+  },
+  {
+    "comments": "Good Teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Aviation Department",
+    "professor_name": "Alan  Cavaiola",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew22is06",
+    "email": "Trail"
+  },
+  {
+    "comments": "Good Teaching",
+    "sentiment_label": "Positive",
+    "department_name": "Art History Department",
+    "professor_name": "Abi  Awomolo",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew22is06",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "worst teaching",
+    "sentiment_label": "Negative",
+    "department_name": "Art History Department",
+    "professor_name": "Abi  Awomolo",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew22is06",
+    "email": "aishwarya.s.koti724@gmail.com"
+  },
+  {
+    "comments": "Very good teacher",
+    "sentiment_label": "Positive",
+    "department_name": "Design Department",
+    "professor_name": "Anita  Wagman-Iscove",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew2",
+    "email": "Trail"
+  },
+  {
+    "comments": "Worst teacher",
+    "sentiment_label": "Negative",
+    "department_name": "Design Department",
+    "professor_name": "Anita  Wagman-Iscove",
+    "star_rating": "4/5",
+    "student_name": "Aish",
+    "usn": "1ew2",
+    "email": "Trail"
   }
 ]

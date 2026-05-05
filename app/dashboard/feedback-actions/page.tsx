@@ -12,7 +12,7 @@ export default function FeedbackActionsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">
-          {userRole === "admin" ? "Feedback Actions" : "Faculty Tools"}
+          {userRole === "admin" ? "Feedback Actions" : "Recent Feedback"}
         </h1>
         <p className="text-muted-foreground">
           {userRole === "admin"
@@ -21,11 +21,14 @@ export default function FeedbackActionsPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <PredictBox />
-
+      {userRole === "admin" ? (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <PredictBox />
+          <RecentFeedback />
+        </div>
+      ) : (
         <RecentFeedback />
-      </div>
+      )}
 
       {userRole === "admin" && <DatasetManager />}
     </div>

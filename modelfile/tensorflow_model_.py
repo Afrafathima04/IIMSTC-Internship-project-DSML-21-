@@ -3,10 +3,7 @@ import tensorflow as tf
 print(f"TensorFlow: {tf.__version__}")
 print(f"GPUs found: {tf.config.list_physical_devices('GPU')}")
 
-
-
-
-import os, time, re
+import os, time, re, json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -21,8 +18,6 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
-from groq import Groq
-from kaggle_secrets import UserSecretsClient
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
@@ -31,91 +26,31 @@ print("All imports successful ✅")
 
 
 
-data_path = '/kaggle/input/datasets/sonu7676/data-for-tensorflow'
-df = pd.read_excel(f'{data_path}/balanced_edufeed_dataset (2).xlsx')
-df = df[['comments', 'sentiment_label']].dropna()
-df['comments'] = df['comments'].astype(str).str.strip()
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DATASET_PATHS = [
+    os.path.join(root_dir, "edufeed_clean.csv"),
+    os.path.join(root_dir, "public", "feedback.csv"),
+    "/kaggle/input/datasets/sonu7676/data-for-tensorflow/balanced_edufeed_dataset (2).xlsx",
+]
+
+dataset_path = next((path for path in DATASET_PATHS if os.path.exists(path)), None)
+if dataset_path is None:
+    raise FileNotFoundError(
+        "Dataset not found. Place edufeed_clean.csv in the repository root or update the training script dataset paths."
+    )
+
+if dataset_path.lower().endswith(".xlsx"):
+    df = pd.read_excel(dataset_path)
+else:
+    df = pd.read_csv(dataset_path)
+
+if "comments" not in df.columns or "sentiment_label" not in df.columns:
+    raise ValueError("Dataset must contain 'comments' and 'sentiment_label' columns.")
 
 print(f'Total samples: {len(df)}')
-print('\nOriginal label distribution:')
-print(df['sentiment_label'].value_counts())
-df.head()
-
-# 
-
-
-user_secrets = UserSecretsClient()
-api_key = user_secrets.get_secret('llm')
-client = Groq(api_key=api_key)
-
-VALID_LABELS = {'positive', 'negative', 'neutral'}
-CACHE_PATH   = '/kaggle/working/groq_labels.csv'
-
-def groq_classify(text: str, retries: int = 3) -> str:
-    prompt = (
-        'Classify the sentiment of the following educational feedback comment.\n'
-        'Reply with ONLY one word: Positive, Negative, or Neutral.\n\n'
-        f'Comment: {text}\n\nSentiment:'
-    )
-    for attempt in range(retries):
-        try:
-            resp = client.chat.completions.create(
-                model='llama-3.1-8b-instant',
-                messages=[{'role': 'user', 'content': prompt}],
-                max_tokens=5,
-                temperature=0.0
-            )
-            raw = resp.choices[0].message.content.strip().lower()
-            for word in re.split(r'\W+', raw):
-                if word in VALID_LABELS:
-                    return word.capitalize()
-            return 'Neutral'
-        except Exception as e:
-            if attempt < retries - 1:
-                time.sleep(2 ** attempt)
-            else:
-                print(f'[WARN] Failed after {retries} attempts: {e}')
-                return 'Neutral'
-
-print("Groq client ready ✅")
-
-# In[5]:
-
-
-user_secrets = UserSecretsClient()
-api_key = user_secrets.get_secret('llm')
-client = Groq(api_key=api_key)
-
-VALID_LABELS = {'positive', 'negative', 'neutral'}
-CACHE_PATH   = '/kaggle/working/groq_labels.csv'
-
-def groq_classify(text: str, retries: int = 3) -> str:
-    prompt = (
-        'Classify the sentiment of the following educational feedback comment.\n'
-        'Reply with ONLY one word: Positive, Negative, or Neutral.\n\n'
-        f'Comment: {text}\n\nSentiment:'
-    )
-    for attempt in range(retries):
-        try:
-            resp = client.chat.completions.create(
-                model='llama-3.1-8b-instant',
-                messages=[{'role': 'user', 'content': prompt}],
-                max_tokens=5,
-                temperature=0.0
-            )
-            raw = resp.choices[0].message.content.strip().lower()
-            for word in re.split(r'\W+', raw):
-                if word in VALID_LABELS:
-                    return word.capitalize()
-            return 'Neutral'
-        except Exception as e:
-            if attempt < retries - 1:
-                time.sleep(2 ** attempt)
-            else:
-                print(f'[WARN] Failed after {retries} attempts: {e}')
-                return 'Neutral'
-
-print("Groq client ready ✅")
+df = df[["comments", "sentiment_label"]].dropna()
+df["comments"] = df["comments"].astype(str).str.strip()
+print("Loaded dataset from", dataset_path)
 
 # In[6]:
 
@@ -124,11 +59,7 @@ print(df['comments'].str.len().describe())
 
 # In[7]:
 
-
-if os.path.exists(CACHE_PATH):
-    print("Cache found! Loading...")
-else:
-    print("No cache — will call Groq API for all 35k rows")
+print("Skipping Groq cache checks because local TensorFlow inference is being used.")
 
 # In[8]:
 
@@ -221,9 +152,11 @@ print("Data ready ✅")
 
 import tensorflow as tf
 
-# Use both GPUs
-strategy = tf.distribute.MirroredStrategy()
-print(f'GPUs: {strategy.num_replicas_in_sync}')
+if tf.config.list_physical_devices("GPU"):
+    strategy = tf.distribute.MirroredStrategy()
+else:
+    strategy = tf.distribute.get_strategy()
+print(f"Using strategy: {strategy.__class__.__name__}")
 
 with strategy.scope():
     inp = keras.Input(shape=(MAX_LEN,))
@@ -247,9 +180,12 @@ model.summary()
 # In[15]:
 
 
+MODEL_DIR = os.path.dirname(__file__)
+model_path = os.path.join(MODEL_DIR, "best_model.keras")
+
 callbacks = [
     keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=4, restore_best_weights=True),
-    keras.callbacks.ModelCheckpoint('/kaggle/working/best_model.keras', monitor='val_accuracy', save_best_only=True),
+    keras.callbacks.ModelCheckpoint(model_path, monitor='val_accuracy', save_best_only=True),
     keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=2, min_lr=1e-6)
 ]
 
@@ -257,9 +193,32 @@ history = model.fit(
     X_train_pad, y_train_cat,
     validation_data=(X_val_pad, y_val_cat),
     epochs=20,
-    batch_size=128,   # large batch = faster on 2x T4
+    batch_size=128,
     callbacks=callbacks
 )
+
+# Save inference artifacts for backend loading
+print("Saving inference bundle to", MODEL_DIR)
+model.save(model_path)
+with open(os.path.join(MODEL_DIR, "config.json"), "w", encoding="utf-8") as file:
+    file.write(model.to_json())
+model.save_weights(os.path.join(MODEL_DIR, "model.weights.h5"))
+
+with open(os.path.join(MODEL_DIR, "tokenizer_config.json"), "w", encoding="utf-8") as file:
+    json.dump(vectorizer.get_config(), file, indent=2)
+with open(os.path.join(MODEL_DIR, "tokenizer_vocab.json"), "w", encoding="utf-8") as file:
+    json.dump(vectorizer.get_vocabulary(), file, indent=2)
+
+joblib.dump(label_encoder, os.path.join(MODEL_DIR, "label_encoder.pkl"))
+
+metrics = {
+    "accuracy": float(history.history["val_accuracy"][-1]) if history.history.get("val_accuracy") else None,
+    "loss": float(history.history["val_loss"][-1]) if history.history.get("val_loss") else None,
+}
+with open(os.path.join(MODEL_DIR, "metrics.json"), "w", encoding="utf-8") as file:
+    json.dump(metrics, file, indent=2)
+
+print("Saved model bundle and tokenizer artifacts.")
 
 # In[16]:
 
@@ -268,7 +227,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-best_model = keras.models.load_model('/kaggle/working/best_model.keras')
+best_model = keras.models.load_model(model_path)
 
 test_loss, test_acc = best_model.evaluate(X_test_pad, y_test_cat, verbose=0)
 print(f'Test Accuracy : {test_acc:.4f}')
@@ -289,7 +248,7 @@ plt.title('Confusion Matrix — TF Model')
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.tight_layout()
-plt.savefig('/kaggle/working/confusion_matrix.png', dpi=150)
+plt.savefig(os.path.join(MODEL_DIR, 'confusion_matrix.png'), dpi=150)
 plt.show()
 
 # In[17]:
@@ -297,14 +256,11 @@ plt.show()
 
 import joblib
 from tensorflow import keras
-from groq import Groq
 
 # ── LOAD ─────────────────────────────────────────────────────────────────
-model = keras.models.load_model('/kaggle/working/best_model.keras')
+model = keras.models.load_model(model_path)
 # vectorizer  ← already in memory from training cell
 # label_encoder ← already in memory from training cell
-# client (Groq) ← already in memory
-
 print("Model loaded ✅")
 print("Label classes:", label_encoder.classes_)
 

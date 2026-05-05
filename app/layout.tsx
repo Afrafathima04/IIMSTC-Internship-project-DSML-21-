@@ -3,7 +3,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'EDU-FEED | Student Feedback Analytics Dashboard',
+  title: 'ED-FEED | Student Feedback Analytics Dashboard',
   description: 'AI-powered student feedback analytics dashboard with sentiment analysis, topic extraction, and actionable insights for educational institutions.',
   generator: 'v0.app',
   icons: {

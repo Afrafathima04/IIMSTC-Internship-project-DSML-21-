@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Bell, Moon, Sun, Menu, LogOut, User, Settings } from "lucide-react"
-import { departments } from "@/lib/dashboard-data"
+import { getDepartment } from "@/lib/access-control"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { DASHBOARD_SESSION_KEY } from "@/lib/access-control"
@@ -29,6 +29,7 @@ export function DashboardNavbar() {
   const {
     currentUser,
     userRole,
+    rawData,
     selectedDepartment,
     setSelectedDepartment,
     sidebarOpen,
@@ -37,6 +38,13 @@ export function DashboardNavbar() {
 
   const [isDark, setIsDark] = useState(false)
   const router = useRouter()
+  const availableDepartments = Array.from(
+    new Set(
+      rawData
+        .map((item) => getDepartment(item))
+        .filter(Boolean)
+    )
+  ).sort()
 
   const handleLogout = () => {
     localStorage.removeItem(DASHBOARD_SESSION_KEY)
@@ -70,7 +78,8 @@ export function DashboardNavbar() {
               <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
-              {departments.map((dept) => (
+              <SelectItem value="All Departments">All Departments</SelectItem>
+              {availableDepartments.map((dept) => (
                 <SelectItem key={dept} value={dept}>
                   {dept}
                 </SelectItem>

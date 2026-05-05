@@ -36,7 +36,6 @@ const facultyNavItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Sentiment Analysis", href: "/dashboard/sentiment", icon: TrendingUp },
   { name: "Feedback Explorer", href: "/dashboard/feedback", icon: FileText },
-  { name: "Faculty Tools", href: "/dashboard/feedback-actions", icon: WandSparkles },
   { name: "Settings", href: "/dashboard/settings", icon: Settings }
 ]
 
@@ -62,7 +61,7 @@ export function DashboardSidebar() {
             </div>
             {sidebarOpen && (
               <span className="text-xl font-bold text-sidebar-foreground">
-                EDU-FEED
+                ED-FEED
               </span>
             )}
           </Link>

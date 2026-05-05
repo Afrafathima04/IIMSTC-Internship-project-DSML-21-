@@ -45,6 +45,54 @@ ANONYMIZE_PATTERNS = [
   (re.compile(r"\b[A-Z]{2,4}\d{2,4}[A-Z]{0,3}\d{0,4}\b", re.IGNORECASE), "[USN]"),
 ]
 
+POSITIVE_HINTS = {
+  "amazing",
+  "awesome",
+  "best",
+  "brilliant",
+  "clear",
+  "effective",
+  "engaging",
+  "excellent",
+  "friendly",
+  "good",
+  "great",
+  "helpful",
+  "impressive",
+  "informative",
+  "kind",
+  "nice",
+  "outstanding",
+  "perfect",
+  "positive",
+  "supportive",
+  "understanding",
+  "useful",
+  "wonderful",
+}
+
+NEGATIVE_HINTS = {
+  "annoying",
+  "average",
+  "bad",
+  "boring",
+  "confusing",
+  "disappointing",
+  "hard",
+  "horrible",
+  "negative",
+  "poor",
+  "rude",
+  "slow",
+  "terrible",
+  "unclear",
+  "unhelpful",
+  "useless",
+  "worst",
+}
+
+NEGATION_HINTS = {"not", "never", "no", "hardly", "barely", "without"}
+
 
 def extract_keywords(text: str) -> list[str]:
   words = re.findall(r"[a-zA-Z]{4,}", text.lower())
@@ -65,6 +113,39 @@ def anonymize_text(text: str) -> str:
   anonymized = re.sub(r"(\[Phone\]\s*){2,}", "[Phone] ", anonymized)
   anonymized = re.sub(r"\s+", " ", anonymized).strip()
   return anonymized
+
+
+def _normalize_scores(scores: dict[str, float]) -> dict[str, float]:
+  total = sum(max(float(value), 0.0) for value in scores.values())
+  if total <= 0:
+    return {label: 0.0 for label in LABEL_ORDER}
+  return {label: round(max(float(scores.get(label, 0.0)), 0.0) / total, 4) for label in LABEL_ORDER}
+
+
+def _apply_short_text_heuristics(text: str, scores: dict[str, float]) -> dict[str, float]:
+  words = re.findall(r"[a-zA-Z']+", text.lower())
+  if not words or len(words) > 12:
+    return scores
+
+  positive_hits = sum(1 for word in words if word in POSITIVE_HINTS)
+  negative_hits = sum(1 for word in words if word in NEGATIVE_HINTS)
+  has_negation = any(word in NEGATION_HINTS for word in words)
+
+  if positive_hits and not negative_hits and not has_negation:
+    boosted = dict(scores)
+    boosted["Positive"] = max(float(boosted.get("Positive", 0.0)), 0.72)
+    boosted["Negative"] = min(float(boosted.get("Negative", 0.0)), 0.16)
+    boosted["Neutral"] = min(float(boosted.get("Neutral", 0.0)), 0.12)
+    return _normalize_scores(boosted)
+
+  if negative_hits and not positive_hits:
+    boosted = dict(scores)
+    boosted["Negative"] = max(float(boosted.get("Negative", 0.0)), 0.72)
+    boosted["Positive"] = min(float(boosted.get("Positive", 0.0)), 0.14)
+    boosted["Neutral"] = min(float(boosted.get("Neutral", 0.0)), 0.14)
+    return _normalize_scores(boosted)
+
+  return scores
 
 
 def _first_existing_path(candidates: list[str]) -> str | None:
@@ -100,9 +181,9 @@ def _to_serializable_float(value: Any) -> float | None:
 class SentimentInferenceService:
   def __init__(self, model_dir: str):
     self.model_dir = model_dir
-    self.provider = "groq"
+    self.provider = "tensorflow"
     self.model_ready = False
-    self.groq_enabled = bool(os.environ.get("GROQ_API_KEY"))
+    self.groq_enabled = False
     self.model = None
     self.vectorizer = None
     self.label_encoder = None
@@ -113,7 +194,7 @@ class SentimentInferenceService:
       "f1_score": None,
       "confusion_matrix": None,
     }
-    self.mode = "tensorflow+groq"
+    self.mode = "tensorflow"
     self.notes: list[str] = []
     self._initialize()
 
@@ -124,16 +205,16 @@ class SentimentInferenceService:
 
   def _load_mode(self) -> None:
     if not os.path.exists(MODEL_MODE_FILE):
-      self.mode = "tensorflow+groq" if self.groq_enabled else "tensorflow"
+      self.mode = "tensorflow"
       return
 
     try:
       with open(MODEL_MODE_FILE, "r", encoding="utf-8") as file:
         payload = json.load(file)
       requested = payload.get("mode")
-      self.mode = requested if requested in {"tensorflow", "tensorflow+groq"} else ("tensorflow+groq" if self.groq_enabled else "tensorflow")
+      self.mode = requested if requested == "tensorflow" else "tensorflow"
     except Exception:
-      self.mode = "tensorflow+groq" if self.groq_enabled else "tensorflow"
+      self.mode = "tensorflow"
 
   def _save_mode(self) -> None:
     with open(MODEL_MODE_FILE, "w", encoding="utf-8") as file:
@@ -157,32 +238,40 @@ class SentimentInferenceService:
       import tensorflow as tf
       from tensorflow import keras
 
+      keras_path = _first_existing_path(
+        [
+          os.path.join(self.model_dir, "best_model.keras"),
+          os.path.join(DOWNLOADS_DIR, "best_model (1).keras"),
+        ]
+      )
       config_path = _first_existing_path(
         [
-          os.path.join(DOWNLOADS_DIR, "best_model (1).keras", "config.json"),
           os.path.join(self.model_dir, "config.json"),
+          os.path.join(DOWNLOADS_DIR, "best_model (1).keras", "config.json"),
         ]
       )
       weights_path = _first_existing_path(
         [
-          os.path.join(DOWNLOADS_DIR, "best_model (1).keras", "model.weights.h5"),
           os.path.join(self.model_dir, "model.weights.h5"),
+          os.path.join(DOWNLOADS_DIR, "best_model (1).keras", "model.weights.h5"),
         ]
       )
       tokenizer_config_path = _first_existing_path(
         [
+          os.path.join(self.model_dir, "tokenizer_config.json"),
           os.path.join(DOWNLOADS_DIR, "tokenizer_config (2).json"),
           *glob.glob(os.path.join(self.model_dir, "*tokenizer_config*.json")),
         ]
       )
       tokenizer_vocab_path = _first_existing_path(
         [
-          os.path.join(DOWNLOADS_DIR, "tokenizer_vocab.json"),
           os.path.join(self.model_dir, "tokenizer_vocab.json"),
+          os.path.join(DOWNLOADS_DIR, "tokenizer_vocab.json"),
         ]
       )
       tokenizer_weights_path = _first_existing_path(
         [
+          os.path.join(self.model_dir, "tokenizer_weights.pkl"),
           os.path.join(DOWNLOADS_DIR, "tokenizer_weights (2).pkl"),
           os.path.join(DOWNLOADS_DIR, "tokenizer_weights.pkl"),
           *glob.glob(os.path.join(self.model_dir, "*tokenizer_weights*.pkl")),
@@ -190,26 +279,35 @@ class SentimentInferenceService:
       )
       label_encoder_path = _first_existing_path(
         [
+          os.path.join(self.model_dir, "label_encoder.pkl"),
           os.path.join(DOWNLOADS_DIR, "label_encoder (2).pkl"),
           *glob.glob(os.path.join(self.model_dir, "*label_encoder*.pkl")),
         ]
       )
 
-      if not config_path or not weights_path:
-        self.notes.append("TensorFlow model config.json or model.weights.h5 is missing.")
+      if not keras_path and (not config_path or not weights_path):
+        self.notes.append("TensorFlow model bundle is missing: expected best_model.keras or config.json/model.weights.h5.")
         return
 
       if not tokenizer_config_path:
         self.notes.append("Tokenizer config file is missing.")
         return
 
-      with open(config_path, "r", encoding="utf-8") as file:
-        model_config = file.read()
+      if keras_path and os.path.isfile(keras_path):
+        self.model = keras.models.load_model(keras_path)
+      else:
+        if not config_path or not weights_path:
+          self.notes.append("TensorFlow directory bundle requires config.json and model.weights.h5.")
+          return
+
+        with open(config_path, "r", encoding="utf-8") as file:
+          model_config = file.read()
+
+        self.model = keras.models.model_from_json(model_config)
+        self.model.load_weights(weights_path)
+
       with open(tokenizer_config_path, "r", encoding="utf-8") as file:
         tokenizer_config = json.load(file)
-
-      self.model = keras.models.model_from_json(model_config)
-      self.model.load_weights(weights_path)
 
       if tokenizer_vocab_path:
         with open(tokenizer_vocab_path, "r", encoding="utf-8") as file:
@@ -291,11 +389,11 @@ class SentimentInferenceService:
           self.label_encoder = None
 
       self.model_ready = True
-      self.provider = "tensorflow+groq" if self.groq_enabled else "tensorflow"
+      self.provider = "tensorflow"
     except Exception as error:
       self.notes.append(f"TensorFlow bundle could not be loaded: {error}")
       self.model_ready = False
-      self.provider = "groq" if self.groq_enabled else "unavailable"
+      self.provider = "unavailable"
 
   def _predict_with_tensorflow(self, text: str) -> dict[str, float]:
     if self.vectorizer["kind"] == "text_vectorization":
@@ -318,79 +416,15 @@ class SentimentInferenceService:
     return {label: round(float(scores.get(label, 0.0)), 4) for label in LABEL_ORDER}
 
   def set_mode(self, mode: str) -> dict[str, Any]:
-    if mode not in {"tensorflow", "tensorflow+groq"}:
-      raise ValueError("Mode must be 'tensorflow' or 'tensorflow+groq'.")
+    if mode != "tensorflow":
+      raise ValueError("Mode must be 'tensorflow'.")
 
-    if mode == "tensorflow" and not self.model_ready:
+    if not self.model_ready:
       raise ValueError("TensorFlow mode is unavailable because the TensorFlow model is not ready.")
 
-    if mode == "tensorflow+groq" and not self.groq_enabled:
-      raise ValueError("TensorFlow+Groq mode is unavailable because GROQ_API_KEY is not configured.")
-
-    self.mode = mode
+    self.mode = "tensorflow"
     self._save_mode()
     return self.get_status()
-
-  def _groq_classify(self, text: str) -> str | None:
-    api_key = os.environ.get("GROQ_API_KEY")
-    if not api_key:
-      return None
-
-    payload = {
-      "model": os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant"),
-      "temperature": 0,
-      "max_tokens": 5,
-      "messages": [
-        {
-          "role": "system",
-          "content": "Classify the sentiment of the educational feedback comment. Reply using exactly one word: Positive, Negative, or Neutral.",
-        },
-        {
-          "role": "user",
-          "content": text,
-        },
-      ],
-    }
-    request = urllib.request.Request(
-      "https://api.groq.com/openai/v1/chat/completions",
-      data=json.dumps(payload).encode("utf-8"),
-      headers={
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-      },
-      method="POST",
-    )
-
-    try:
-      with urllib.request.urlopen(request, timeout=20) as response:
-        body = json.loads(response.read().decode("utf-8"))
-      content = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip().lower()
-
-      for label in LABEL_ORDER:
-        if label.lower() in content:
-          return label
-      return None
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
-      note = f"Groq classification failed: {error}"
-      if note not in self.notes:
-        self.notes.append(note)
-      return None
-
-  def _align_scores_to_label(self, scores: dict[str, float], label: str) -> dict[str, float]:
-    adjusted = {name: round(float(scores.get(name, 0.0)), 4) for name in LABEL_ORDER}
-    current_top = max(adjusted, key=adjusted.get)
-
-    if current_top == label:
-      return adjusted
-
-    boost = max(0.62, adjusted.get(current_top, 0.0))
-    remaining = round((1 - boost) / 2, 4)
-    adjusted[label] = round(boost, 4)
-
-    others = [name for name in LABEL_ORDER if name != label]
-    adjusted[others[0]] = remaining
-    adjusted[others[1]] = round(1 - adjusted[label] - adjusted[others[0]], 4)
-    return adjusted
 
   def predict_sentiment(self, text: str) -> dict[str, Any]:
     if not text or not str(text).strip():
@@ -399,31 +433,21 @@ class SentimentInferenceService:
     cleaned_text = str(text).strip()
     anonymized_comment = anonymize_text(cleaned_text)
 
-    if not self.model_ready and not self.groq_enabled:
-      raise RuntimeError("Neither the TensorFlow model nor Groq inference is available.")
+    if not self.model_ready:
+      raise RuntimeError("TensorFlow model is not available.")
 
-    scores = self._predict_with_tensorflow(anonymized_comment) if self.model_ready else {
-      "Positive": 0.0,
-      "Negative": 0.0,
-      "Neutral": 0.0,
-    }
+    scores = self._predict_with_tensorflow(anonymized_comment)
+    scores = _apply_short_text_heuristics(cleaned_text, scores)
     model_label = max(scores, key=scores.get) if any(scores.values()) else None
-    groq_label = self._groq_classify(anonymized_comment) if self.mode == "tensorflow+groq" else None
 
-    if groq_label:
-      final_label = groq_label
-      scores = self._align_scores_to_label(
-        scores if any(scores.values()) else {"Positive": 0.19, "Negative": 0.19, "Neutral": 0.62},
-        groq_label,
-      )
-    elif model_label:
+    if model_label:
       final_label = model_label
     else:
       final_label = "Neutral"
       scores = {"Positive": 0.2, "Negative": 0.2, "Neutral": 0.6}
 
     ordered_scores = {label: round(float(scores.get(label, 0.0)), 4) for label in LABEL_ORDER}
-    response_provider = "tensorflow+groq" if groq_label else ("tensorflow" if self.model_ready else "groq")
+    response_provider = "tensorflow" if self.model_ready else "unavailable"
 
     return {
       "label": final_label,
@@ -440,7 +464,7 @@ class SentimentInferenceService:
       "provider": response_provider,
       "mode": self.mode,
       "model_ready": self.model_ready,
-      "groq_used": bool(groq_label),
+      "groq_used": False,
       "notes": self.notes,
     }
 
@@ -448,13 +472,9 @@ class SentimentInferenceService:
     return {
       "provider": self.provider,
       "mode": self.mode,
-      "available_modes": [
-        mode
-        for mode in ["tensorflow", "tensorflow+groq"]
-        if (mode == "tensorflow" and self.model_ready) or (mode == "tensorflow+groq" and self.groq_enabled)
-      ],
+      "available_modes": ["tensorflow"] if self.model_ready else [],
       "model_ready": self.model_ready,
-      "groq_enabled": self.groq_enabled,
+      "groq_enabled": False,
       "accuracy": _to_serializable_float(self.metrics.get("accuracy")),
       "precision": _to_serializable_float(self.metrics.get("precision")),
       "recall": _to_serializable_float(self.metrics.get("recall")),

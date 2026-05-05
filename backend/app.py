@@ -7,7 +7,7 @@ from flask_cors import CORS
 import pandas as pd
 
 from data_service import get_dataset_status, load_dataset_frame, reset_dataset, save_uploaded_dataset
-from model import get_model_status, predict_sentiment, set_model_mode
+from model import get_model_status, predict_sentiment
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_FILE = os.path.join(ROOT_DIR, "feedback_store.json")
@@ -128,20 +128,6 @@ def reset_dataset_route():
 @app.route("/api/model-status", methods=["GET"])
 def model_status():
   return jsonify(get_model_status())
-
-
-@app.route("/api/model-mode", methods=["POST"])
-def model_mode():
-  payload = request.json or {}
-  mode = payload.get("mode") or ""
-
-  try:
-    status = set_model_mode(mode)
-    return jsonify(status)
-  except ValueError as error:
-    return jsonify({"error": str(error)}), 400
-  except Exception as error:
-    return jsonify({"error": f"Failed to change model mode: {error}"}), 500
 
 
 @app.route("/api/predict", methods=["POST"])

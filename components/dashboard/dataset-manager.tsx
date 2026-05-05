@@ -17,65 +17,21 @@ type DatasetStatus = {
 
 const FACULTY_DIRECTORY_CACHE_KEY = "edufeed-faculty-directory"
 
-type ModelStatus = {
-  provider: string
-  mode?: string
-  available_modes?: string[]
-  model_ready: boolean
-  accuracy?: number | null
-  precision?: number | null
-  recall?: number | null
-  f1_score?: number | null
-  notes?: string[]
-}
-
 export function DatasetManager() {
   const { refreshData } = useDashboard()
   const [datasetStatus, setDatasetStatus] = useState<DatasetStatus | null>(null)
-  const [modelStatus, setModelStatus] = useState<ModelStatus | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isBusy, setIsBusy] = useState(false)
   const [message, setMessage] = useState("")
-  const [isChangingMode, setIsChangingMode] = useState(false)
 
   const loadStatus = async () => {
     try {
-      const [datasetResponse, modelResponse] = await Promise.all([
-        fetch("http://localhost:5000/api/dataset-status"),
-        fetch("http://localhost:5000/api/model-status"),
-      ])
+      const datasetResponse = await fetch("http://localhost:5000/api/dataset-status")
 
       setDatasetStatus(await datasetResponse.json())
-      setModelStatus(await modelResponse.json())
     } catch (error) {
       console.error("STATUS ERROR:", error)
-      setMessage("Could not load dataset or model status.")
-    }
-  }
-
-  const handleModeChange = async (mode: string) => {
-    setIsChangingMode(true)
-    setMessage("")
-
-    try {
-      const response = await fetch("http://localhost:5000/api/model-mode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode }),
-      })
-      const payload = await response.json()
-
-      if (!response.ok) {
-        throw new Error(payload.error || "Could not change model mode.")
-      }
-
-      setModelStatus(payload)
-      setMessage(`Model mode switched to ${mode}.`)
-    } catch (error) {
-      console.error("MODEL MODE ERROR:", error)
-      setMessage(error instanceof Error ? error.message : "Could not change model mode.")
-    } finally {
-      setIsChangingMode(false)
+      setMessage("Could not load dataset status.")
     }
   }
 
@@ -194,63 +150,6 @@ export function DatasetManager() {
           </div>
 
           {message && <p className="text-sm text-muted-foreground">{message}</p>}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Model Status</CardTitle>
-          <CardDescription>
-            TensorFlow model inference activates automatically when the required saved model artifacts are present and valid.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Badge variant={modelStatus?.model_ready ? "default" : "secondary"}>
-              {modelStatus?.model_ready ? "Model Ready" : "Fallback Active"}
-            </Badge>
-            <Badge variant="outline">{modelStatus?.provider || "Unknown provider"}</Badge>
-          </div>
-
-          {!!modelStatus?.available_modes?.length && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Inference Mode</p>
-              <div className="flex flex-wrap gap-2">
-                {modelStatus.available_modes.map((mode) => (
-                  <Button
-                    key={mode}
-                    type="button"
-                    variant={modelStatus.mode === mode ? "default" : "outline"}
-                    size="sm"
-                    disabled={isChangingMode}
-                    onClick={() => handleModeChange(mode)}
-                  >
-                    {mode === "tensorflow" ? "TensorFlow" : "TensorFlow + Groq"}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border p-3">
-              <p className="text-xs uppercase text-muted-foreground">Accuracy</p>
-              <p className="text-lg font-semibold">{modelStatus?.accuracy ?? "N/A"}</p>
-            </div>
-            <div className="rounded-lg border p-3">
-              <p className="text-xs uppercase text-muted-foreground">F1 Score</p>
-              <p className="text-lg font-semibold">{modelStatus?.f1_score ?? "N/A"}</p>
-            </div>
-          </div>
-
-          {!!modelStatus?.notes?.length && (
-            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              <p className="font-medium">Model Notes</p>
-              {modelStatus.notes.map((note, index) => (
-                <p key={index}>{note}</p>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
