@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ED-FEED — Student Feedback Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<style>
+/* ─── RESET & BASE ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080B12;
+  --bg2:       #0D1120;
+  --bg3:       #111827;
+  --bg4:       #161E2E;
+  --border:    #1E2A40;
+  --border2:   #263348;
+  --text:      #E8EDF5;
+  --text-dim:  #8A96B0;
+  --text-mute: #4A5568;
+  --accent:    #4F8EF7;
+  --accent2:   #6C63FF;
+  --green:     #34D399;
+  --red:       #F87171;
+  --amber:     #FBBF24;
+  --teal:      #2DD4BF;
+  --purple:    #A78BFA;
+  --sidebar-w: 240px;
+  --nav-h:     60px;
+  --radius:    14px;
+  --radius-sm: 8px;
+  --shadow:    0 4px 24px rgba(0,0,0,0.45);
+  --shadow-sm: 0 2px 10px rgba(0,0,0,0.3);
+  --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ─── LOADING SCREEN ─── */
+#loading-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 24px;
+  animation: fadeOut 0.5s ease 1.8s forwards;
+}
+#loading-screen .load-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 32px; font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  animation: pulseScale 1s ease-in-out infinite alternate;
+}
+#loading-screen .load-bar-wrap {
+  width: 200px; height: 2px; background: var(--border);
+  border-radius: 99px; overflow: hidden;
+}
+#loading-screen .load-bar {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 99px;
+  animation: loadBar 1.6s ease forwards;
+}
+#loading-screen .load-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--text-mute);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+@keyframes loadBar { to { width: 100%; } }
+@keyframes pulseScale { from { transform: scale(1); } to { transform: scale(1.04); } }
+@keyframes fadeOut { to { opacity: 0; pointer-events: none; } }
+
+/* ─── TOP NAVBAR ─── */
+#navbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--nav-h); z-index: 100;
+  background: rgba(8,11,18,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 20px 0 calc(var(--sidebar-w) + 20px);
+  gap: 12px;
+  animation: slideDown 0.4s ease 2s both;
+}
+@keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.nav-brand {
+  margin-right: auto;
+  font-family: 'Syne', sans-serif;
+  font-size: 18px; font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  flex-shrink: 0;
+  display: none;
+}
+.nav-select {
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text-dim); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; padding: 6px 28px 6px 10px;
+  border-radius: var(--radius-sm); cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234A5568'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  transition: var(--transition);
+}
+.nav-select:hover { border-color: var(--accent); color: var(--text); }
+.nav-search {
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; padding: 6px 12px; border-radius: var(--radius-sm);
+  width: 180px; transition: var(--transition);
+}
+.nav-search:focus { outline: none; border-color: var(--accent); width: 220px; }
+.nav-search::placeholder { color: var(--text-mute); }
+.nav-icon-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text-dim); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; transition: var(--transition);
+  flex-shrink: 0;
+}
+.nav-icon-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; transform: scale(1.08); }
+.nav-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
+  color: #fff; cursor: pointer; flex-shrink: 0;
+  border: 2px solid transparent;
+  transition: var(--transition);
+}
+.nav-avatar:hover { border-color: var(--accent); transform: scale(1.1); }
+
+/* ─── SIDEBAR ─── */
+#sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-w); z-index: 200;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding-top: var(--nav-h);
+  animation: slideRight 0.4s ease 2s both;
+  overflow-y: auto;
+}
+@keyframes slideRight { from { transform: translateX(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.sidebar-logo {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px; font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.sidebar-logo-sub {
+  font-size: 10px; color: var(--text-mute);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.sidebar-section-label {
+  font-size: 9px; font-family: 'DM Mono', monospace;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-mute); padding: 16px 20px 6px;
+}
+.sidebar-nav { padding: 4px 10px; flex: 1; }
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; color: var(--text-dim);
+  font-size: 13px; font-weight: 500;
+  transition: var(--transition);
+  position: relative;
+  margin-bottom: 2px;
+}
+.sidebar-item:hover { background: var(--bg3); color: var(--text); }
+.sidebar-item.active {
+  background: rgba(79,142,247,0.12);
+  color: var(--accent);
+}
+.sidebar-item.active::before {
+  content: '';
+  position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 60%; background: var(--accent);
+  border-radius: 0 99px 99px 0;
+}
+.sidebar-item .si-icon { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-item .si-badge {
+  margin-left: auto; font-size: 10px; font-family: 'DM Mono', monospace;
+  background: rgba(248,113,113,0.15); color: var(--red);
+  border: 1px solid rgba(248,113,113,0.3);
+  padding: 1px 7px; border-radius: 99px;
+}
+.sidebar-item .si-badge.green {
+  background: rgba(52,211,153,0.12); color: var(--green);
+  border-color: rgba(52,211,153,0.25);
+}
+.sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid var(--border);
+}
+.sidebar-user {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: var(--transition);
+}
+.sidebar-user:hover { background: var(--bg3); }
+.sidebar-user-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.sidebar-user-name { font-size: 12px; font-weight: 600; }
+.sidebar-user-role { font-size: 10px; color: var(--text-mute); font-family: 'DM Mono', monospace; }
+
+/* ─── MAIN CONTENT ─── */
+#main {
+  margin-left: var(--sidebar-w);
+  padding-top: var(--nav-h);
+  min-height: 100vh;
+}
+.page { display: none; padding: 28px 28px 48px; }
+.page.active { display: block; animation: pageIn 0.3s ease; }
+@keyframes pageIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* ─── PAGE HEADER ─── */
+.page-header { margin-bottom: 24px; }
+.page-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.02em; color: var(--text);
+}
+.page-sub { font-size: 13px; color: var(--text-dim); margin-top: 3px; }
+.page-header-row { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+
+/* ─── CARDS ─── */
+.card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: var(--transition);
+}
+.card:hover { border-color: var(--border2); box-shadow: var(--shadow-sm); }
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 600;
+  color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title span { font-size: 14px; }
+
+/* ─── KPI CARDS ─── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: relative; overflow: hidden;
+  cursor: default;
+  transition: var(--transition);
+  animation: kpiIn 0.5s ease both;
+}
+.kpi-card:nth-child(1) { animation-delay: 2.1s; }
+.kpi-card:nth-child(2) { animation-delay: 2.2s; }
+.kpi-card:nth-child(3) { animation-delay: 2.3s; }
+.kpi-card:nth-child(4) { animation-delay: 2.4s; }
+@keyframes kpiIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+.kpi-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.kpi-card::before {
+  content: ''; position: absolute;
+  top: -40px; right: -40px;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  opacity: 0.06;
+}
+.kpi-card.blue::before { background: var(--accent); border: 1px solid var(--accent); }
+.kpi-card.green::before { background: var(--green); border: 1px solid var(--green); }
+.kpi-card.red::before { background: var(--red); border: 1px solid var(--red); }
+.kpi-card.amber::before { background: var(--amber); border: 1px solid var(--amber); }
+.kpi-card.blue { border-top: 2px solid var(--accent); }
+.kpi-card.green { border-top: 2px solid var(--green); }
+.kpi-card.red { border-top: 2px solid var(--red); }
+.kpi-card.amber { border-top: 2px solid var(--amber); }
+.kpi-label {
+  font-size: 11px; color: var(--text-mute);
+  font-family: 'DM Mono', monospace; letter-spacing: 0.06em;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.kpi-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 34px; font-weight: 800;
+  letter-spacing: -0.03em; line-height: 1;
+  margin-bottom: 10px;
+}
+.kpi-card.blue .kpi-value { color: var(--accent); }
+.kpi-card.green .kpi-value { color: var(--green); }
+.kpi-card.red .kpi-value { color: var(--red); }
+.kpi-card.amber .kpi-value { color: var(--amber); }
+.kpi-trend {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500;
+}
+.kpi-trend.up { color: var(--green); }
+.kpi-trend.down { color: var(--red); }
+.kpi-trend-label { color: var(--text-mute); font-size: 11px; }
+
+/* ─── CHARTS GRID ─── */
+.charts-grid-2 {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; margin-bottom: 24px;
+}
+.charts-grid-3 {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px; margin-bottom: 24px;
+}
+.chart-wrap { position: relative; height: 240px; }
+.chart-wrap canvas { max-height: 100%; }
+
+/* ─── TABLE ─── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  font-size: 10px; font-family: 'DM Mono', monospace;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-mute); padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left; font-weight: 500;
+  cursor: pointer; user-select: none;
+  white-space: nowrap;
+}
+.data-table th:hover { color: var(--accent); }
+.data-table td {
+  padding: 12px 14px; font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--bg4); color: var(--text); }
+
+/* ─── BADGES ─── */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 99px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.02em; white-space: nowrap;
+}
+.badge-green { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+.badge-red   { background: rgba(248,113,113,0.12); color: var(--red);   border: 1px solid rgba(248,113,113,0.25); }
+.badge-amber { background: rgba(251,191,36,0.12);  color: var(--amber);  border: 1px solid rgba(251,191,36,0.25); }
+.badge-blue  { background: rgba(79,142,247,0.12);  color: var(--accent); border: 1px solid rgba(79,142,247,0.25); }
+.badge-purple{ background: rgba(167,139,250,0.12); color: var(--purple); border: 1px solid rgba(167,139,250,0.25); }
+
+/* ─── PROGRESS BAR ─── */
+.prog-bar-wrap { height: 6px; background: var(--bg4); border-radius: 99px; overflow: hidden; }
+.prog-bar { height: 100%; border-radius: 99px; transition: width 1.2s ease; }
+
+/* ─── RATING STARS ─── */
+.stars { color: var(--amber); font-size: 13px; letter-spacing: 1px; }
+
+/* ─── SECTION: SENTIMENT ─── */
+.sentiment-row {
+  display: grid; grid-template-columns: 280px 1fr;
+  gap: 16px; margin-bottom: 24px;
+}
+
+/* ─── SECTION: TOPIC CARDS ─── */
+.topic-grid {
+  display: grid; grid-template-columns: repeat(5,1fr);
+  gap: 12px; margin-bottom: 24px;
+}
+.topic-card {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  transition: var(--transition);
+  cursor: default;
+}
+.topic-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.topic-card-icon { font-size: 22px; margin-bottom: 8px; }
+.topic-card-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.topic-card-pct {
+  font-family: 'Syne', sans-serif;
+  font-size: 24px; font-weight: 800;
+  color: var(--accent); margin-bottom: 8px;
+}
+.topic-card-bar { margin-bottom: 6px; }
+.topic-card-senti { font-size: 10px; color: var(--text-mute); }
+
+/* ─── WORD CLOUD ─── */
+#word-cloud {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  min-height: 200px; display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: center;
+  gap: 10px; margin-bottom: 24px;
+}
+.wc-word {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700; cursor: default;
+  transition: var(--transition);
+  opacity: 0; animation: wcFade 0.5s ease forwards;
+}
+.wc-word:hover { transform: scale(1.15); filter: brightness(1.2); }
+@keyframes wcFade { to { opacity: 1; } }
+
+/* ─── AI SUMMARY ─── */
+.ai-summary-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 16px; margin-bottom: 24px;
+}
+.ai-card {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 22px;
+  position: relative; overflow: hidden;
+  transition: var(--transition);
+}
+.ai-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.ai-card-glow {
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+}
+.ai-card.strengths .ai-card-glow { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+.ai-card.problems .ai-card-glow  { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+.ai-card.suggest .ai-card-glow   { background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+.ai-card-icon { font-size: 28px; margin-bottom: 12px; }
+.ai-card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px; font-weight: 700; margin-bottom: 12px;
+}
+.ai-card.strengths .ai-card-title { color: var(--green); }
+.ai-card.problems  .ai-card-title { color: var(--red); }
+.ai-card.suggest   .ai-card-title { color: var(--accent); }
+.ai-card-list { list-style: none; }
+.ai-card-list li {
+  font-size: 13px; color: var(--text-dim);
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.ai-card-list li:last-child { border-bottom: none; }
+.ai-card-list li::before { font-size: 12px; flex-shrink: 0; margin-top: 2px; }
+.ai-card.strengths .ai-card-list li::before { content: '✓'; color: var(--green); }
+.ai-card.problems  .ai-card-list li::before { content: '!'; color: var(--red); }
+.ai-card.suggest   .ai-card-list li::before { content: '→'; color: var(--accent); }
+
+/* ─── ALERTS ─── */
+.alert-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px; border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  border: 1px solid;
+  transition: var(--transition);
+  animation: alertSlide 0.4s ease both;
+}
+.alert-item:hover { transform: translateX(4px); }
+@keyframes alertSlide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+.alert-item.critical { background: rgba(248,113,113,0.07); border-color: rgba(248,113,113,0.25); }
+.alert-item.warning  { background: rgba(251,191,36,0.07);  border-color: rgba(251,191,36,0.25); }
+.alert-item.stable   { background: rgba(52,211,153,0.07);  border-color: rgba(52,211,153,0.25); }
+.alert-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.alert-item.critical .alert-dot { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.alert-item.warning  .alert-dot { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.alert-item.stable   .alert-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.alert-content { flex: 1; }
+.alert-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.alert-item.critical .alert-title { color: var(--red); }
+.alert-item.warning  .alert-title { color: var(--amber); }
+.alert-item.stable   .alert-title { color: var(--green); }
+.alert-desc { font-size: 12px; color: var(--text-dim); }
+.alert-time { font-size: 10px; color: var(--text-mute); font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+/* ─── FEEDBACK EXPLORER ─── */
+.filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.filter-select {
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text-dim); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; padding: 7px 28px 7px 10px;
+  border-radius: var(--radius-sm); cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234A5568'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  transition: var(--transition);
+}
+.filter-select:hover, .filter-select:focus { border-color: var(--accent); outline: none; color: var(--text); }
+.filter-search-wrap { position: relative; flex: 1; max-width: 280px; }
+.filter-search {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; padding: 7px 12px; border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+.filter-search:focus { outline: none; border-color: var(--accent); }
+.comment-text { font-size: 12px; color: var(--text-dim); line-height: 1.5; max-width: 320px; }
+.anon-tag { font-size: 10px; color: var(--text-mute); font-family: 'DM Mono', monospace; margin-top: 3px; }
+
+/* ─── FACULTY COMPARISON ─── */
+.faculty-grid {
+  display: grid; grid-template-columns: repeat(2,1fr);
+  gap: 16px; margin-bottom: 24px;
+}
+.faculty-card {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px;
+  transition: var(--transition);
+}
+.faculty-card:hover { border-color: var(--border2); box-shadow: var(--shadow-sm); }
+.faculty-card-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+}
+.faculty-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  color: #fff; flex-shrink: 0;
+}
+.faculty-name { font-size: 14px; font-weight: 600; }
+.faculty-course { font-size: 11px; color: var(--text-mute); }
+.faculty-stats { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+.faculty-stat { }
+.faculty-stat-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px; font-weight: 700;
+}
+.faculty-stat-lbl { font-size: 10px; color: var(--text-mute); font-family: 'DM Mono', monospace; }
+
+/* ─── SETTINGS ─── */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.setting-group { margin-bottom: 20px; }
+.setting-label {
+  font-size: 12px; font-weight: 600; color: var(--text-dim);
+  margin-bottom: 8px; display: block;
+}
+.setting-input {
+  width: 100%; background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; padding: 10px 14px; border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+.setting-input:focus { outline: none; border-color: var(--accent); }
+.setting-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+}
+.setting-toggle:last-child { border-bottom: none; }
+.toggle-info .toggle-title { font-size: 13px; font-weight: 500; }
+.toggle-info .toggle-desc { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+.toggle-switch {
+  width: 42px; height: 22px; background: var(--bg4);
+  border: 1px solid var(--border2); border-radius: 99px;
+  cursor: pointer; position: relative; transition: var(--transition);
+  flex-shrink: 0;
+}
+.toggle-switch.on { background: var(--accent); border-color: var(--accent); }
+.toggle-switch::after {
+  content: ''; position: absolute;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--text-mute); top: 2px; left: 2px;
+  transition: var(--transition);
+}
+.toggle-switch.on::after { background: #fff; transform: translateX(20px); }
+
+/* ─── BUTTON ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; transition: var(--transition);
+  position: relative; overflow: hidden;
+}
+.btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,0); transition: var(--transition);
+}
+.btn:hover::after { background: rgba(255,255,255,0.07); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(79,142,247,0.3);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79,142,247,0.4); }
+.btn-primary:active { transform: translateY(0); }
+.btn-ghost {
+  background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text-dim);
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ─── STAT ROW (inside cards) ─── */
+.stat-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px; }
+.stat-item .sv {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 800;
+}
+.stat-item .sl { font-size: 10px; color: var(--text-mute); font-family: 'DM Mono', monospace; text-transform: uppercase; }
+
+/* ─── DIVIDER ─── */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* ─── CHIP ─── */
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 12px; border-radius: 99px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--border2); color: var(--text-dim);
+  background: var(--bg3); transition: var(--transition);
+}
+.chip:hover, .chip.active { background: rgba(79,142,247,0.12); border-color: var(--accent); color: var(--accent); }
+
+/* ─── EMPTY HELPERS ─── */
+.section-mb { margin-bottom: 24px; }
+
+/* ─── DEPT BARS ─── */
+.dept-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.dept-bar-label { font-size: 12px; width: 40px; flex-shrink: 0; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+.dept-bar-track { flex: 1; height: 8px; background: var(--bg4); border-radius: 99px; overflow: hidden; }
+.dept-bar-fill { height: 100%; border-radius: 99px; transition: width 1.2s ease; }
+.dept-bar-val { font-size: 12px; width: 36px; text-align: right; font-family: 'DM Mono', monospace; color: var(--text-mute); }
+
+/* ─── MINI LEGEND ─── */
+.legend { display: flex; gap: 14px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ─── SCORE RING ─── */
+.score-ring-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.score-ring-val {
+  font-family: 'Syne', sans-serif; font-size: 40px; font-weight: 800;
+  color: var(--green); margin-top: 10px;
+}
+.score-ring-label { font-size: 11px; color: var(--text-mute); font-family: 'DM Mono', monospace; text-transform: uppercase; }
+
+/* ─── MISC ─── */
+.text-green  { color: var(--green); }
+.text-red    { color: var(--red); }
+.text-amber  { color: var(--amber); }
+.text-accent { color: var(--accent); }
+.text-mute   { color: var(--text-mute); }
+.fw7 { font-weight: 700; }
+.mono { font-family: 'DM Mono', monospace; }
+
+/* ─── PAGINATION ─── */
+.pagination { display: flex; gap: 6px; align-items: center; justify-content: flex-end; margin-top: 16px; }
+.pg-btn {
+  width: 30px; height: 30px; border-radius: var(--radius-sm);
+  background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text-dim); font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.pg-btn:hover, .pg-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ─── TABS ─── */
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg4); padding: 4px; border-radius: var(--radius-sm); width: fit-content; }
+.tab-btn {
+  padding: 7px 16px; border-radius: 6px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: none; background: transparent;
+  color: var(--text-mute); transition: var(--transition);
+}
+.tab-btn.active { background: var(--bg3); color: var(--accent); box-shadow: var(--shadow-sm); }
+.tab-btn:hover:not(.active) { color: var(--text-dim); }
+
+/* ─── TOOLTIP ─── */
+.tooltip-wrap { position: relative; display: inline-flex; }
+.tooltip-wrap .tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--bg); border: 1px solid var(--border2);
+  color: var(--text); font-size: 11px; padding: 5px 10px;
+  border-radius: 6px; white-space: nowrap;
+  pointer-events: none; opacity: 0; transition: opacity 0.2s;
+  z-index: 99;
+}
+.tooltip-wrap:hover .tooltip { opacity: 1; }
+
+/* ─── REPORT ─── */
+.report-item {
+  display: flex; gap: 14px; padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.report-item:last-child { border-bottom: none; }
+.report-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+  background: var(--bg4);
+}
+.report-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.report-meta { font-size: 11px; color: var(--text-mute); font-family: 'DM Mono', monospace; }
+
+/* ─── RESPONSIVE TWEAKS ─── */
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(2,1fr); }
+  .topic-grid { grid-template-columns: repeat(3,1fr); }
+  .ai-summary-grid { grid-template-columns: 1fr; }
+  .faculty-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  :root { --sidebar-w: 60px; }
+  .sidebar-item span:not(.si-icon) { display: none; }
+  .sidebar-logo-title, .sidebar-logo-sub { display: none; }
+  .sidebar-section-label { display: none; }
+  .sidebar-user-name, .sidebar-user-role { display: none; }
+  .si-badge { display: none; }
+  .charts-grid-2 { grid-template-columns: 1fr; }
+  .sentiment-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="load-logo">ED-FEED</div>
+  <div class="load-bar-wrap"><div class="load-bar"></div></div>
+  <div class="load-text">Initializing intelligence dashboard…</div>
+</div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-title">ED-FEED</div>
+    <div class="sidebar-logo-sub">Feedback Analytics</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section-label">Overview</div>
+    <div class="sidebar-item active" data-page="home">
+      <span class="si-icon">⊞</span><span>Dashboard</span>
+    </div>
+    <div class="sidebar-section-label">Analytics</div>
+    <div class="sidebar-item" data-page="sentiment">
+      <span class="si-icon">◑</span><span>Sentiment</span>
+    </div>
+    <div class="sidebar-item" data-page="topics">
+      <span class="si-icon">◈</span><span>Topic Analysis</span>
+    </div>
+    <div class="sidebar-item" data-page="faculty">
+      <span class="si-icon">◉</span><span>Faculty Compare</span>
+    </div>
+    <div class="sidebar-section-label">Insights</div>
+    <div class="sidebar-item" data-page="aisummary">
+      <span class="si-icon">✦</span><span>AI Summary</span>
+      <span class="si-badge green">New</span>
+    </div>
+    <div class="sidebar-item" data-page="alerts">
+      <span class="si-icon">⚑</span><span>Alerts</span>
+      <span class="si-badge">3</span>
+    </div>
+    <div class="sidebar-section-label">Data</div>
+    <div class="sidebar-item" data-page="explorer">
+      <span class="si-icon">⊟</span><span>Feedback Explorer</span>
+    </div>
+    <div class="sidebar-item" data-page="reports">
+      <span class="si-icon">⊞</span><span>Reports</span>
+    </div>
+    <div class="sidebar-item" data-page="settings">
+      <span class="si-icon">⊙</span><span>Settings</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">AD</div>
+      <div>
+        <div class="sidebar-user-name">Admin</div>
+        <div class="sidebar-user-role">admin · all depts</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="nav-brand">ED-FEED</div>
+  <select class="nav-select">
+    <option>Last 30 Days</option>
+    <option>Last Quarter</option>
+    <option>Semester 1</option>
+    <option>Semester 2</option>
+    <option>Academic Year</option>
+  </select>
+  <select class="nav-select">
+    <option>All Departments</option>
+    <option>CSE</option>
+    <option>ECE</option>
+    <option>AI/ML</option>
+    <option>IT</option>
+  </select>
+  <select class="nav-select">
+    <option>All Courses</option>
+    <option>DBMS</option>
+    <option>OS</option>
+    <option>ML</option>
+    <option>Data Structures</option>
+    <option>Networks</option>
+  </select>
+  <input class="nav-search" type="text" placeholder="🔍  Search feedback…">
+  <button class="nav-icon-btn" title="Notifications">🔔</button>
+  <button class="nav-icon-btn" title="Export">↑</button>
+  <div class="nav-avatar" title="Admin Profile">AD</div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+<!-- ═══════════════════════════════════════ HOME PAGE ═══════ -->
+<div id="page-home" class="page active">
+  <div class="page-header">
+    <div class="page-header-row">
+      <div>
+        <div class="page-title">Dashboard Overview</div>
+        <div class="page-sub">Real-time student feedback analytics · Last updated 2 min ago</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost">↓ Export Report</button>
+        <button class="btn btn-primary">✦ Generate AI Summary</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total Feedback</div>
+      <div class="kpi-value" id="kpi-total">0</div>
+      <div class="kpi-trend up">▲ 12.4% <span class="kpi-trend-label">vs last month</span></div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Positive Rate</div>
+      <div class="kpi-value" id="kpi-pos">0%</div>
+      <div class="kpi-trend up">▲ 3.2% <span class="kpi-trend-label">improvement</span></div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Negative Rate</div>
+      <div class="kpi-value" id="kpi-neg">0%</div>
+      <div class="kpi-trend down">▼ 1.8% <span class="kpi-trend-label">reduction</span></div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">Avg Rating</div>
+      <div class="kpi-value" id="kpi-rating">0.0</div>
+      <div class="kpi-trend up">▲ 0.3 <span class="kpi-trend-label">stars gained</span></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="charts-grid-2 section-mb">
+    <div class="card">
+      <div class="card-title"><span>◑</span> Sentiment Distribution</div>
+      <div class="chart-wrap"><canvas id="chart-pie-home"></canvas></div>
+      <div class="legend" style="margin-top:14px;justify-content:center;">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Positive 72%</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Neutral 10%</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Negative 18%</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>〜</span> Sentiment Trend (12 Weeks)</div>
+      <div class="chart-wrap"><canvas id="chart-trend-home"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="charts-grid-2 section-mb">
+    <div class="card">
+      <div class="card-title"><span>◈</span> Top Issues This Week</div>
+      <div style="margin-top:4px;">
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:130px;font-size:12px;color:var(--text-dim);">Lab Facilities</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:78%;background:var(--red);"></div></div><div class="dept-bar-val">78%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:130px;font-size:12px;color:var(--text-dim);">Assignment Load</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:64%;background:var(--amber);"></div></div><div class="dept-bar-val">64%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:130px;font-size:12px;color:var(--text-dim);">Exam Difficulty</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:52%;background:var(--amber);"></div></div><div class="dept-bar-val">52%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:130px;font-size:12px;color:var(--text-dim);">Pacing / Speed</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:41%;background:var(--accent);"></div></div><div class="dept-bar-val">41%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:130px;font-size:12px;color:var(--text-dim);">Communication</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:28%;background:var(--accent);"></div></div><div class="dept-bar-val">28%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:130px;font-size:12px;color:var(--text-dim);">Teaching Style</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:18%;background:var(--green);"></div></div><div class="dept-bar-val">18%</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>◉</span> Department Health</div>
+      <div class="chart-wrap"><canvas id="chart-dept-home"></canvas></div>
+    </div>
+  </div>
+
+  <!-- RECENT ALERTS -->
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between;"><span><span>⚑</span> Active Alerts</span><button class="btn btn-ghost" style="padding:4px 12px;font-size:11px;" onclick="navigateTo('alerts')">View All →</button></div>
+    <div class="alert-item critical" style="animation-delay:0s">
+      <div class="alert-dot"></div>
+      <div class="alert-content"><div class="alert-title">High Negative Sentiment — DBMS</div><div class="alert-desc">Negative feedback reached 48% in DBMS course this week. Threshold: 40%.</div></div>
+      <div class="alert-time">2h ago</div>
+    </div>
+    <div class="alert-item warning" style="animation-delay:0.1s">
+      <div class="alert-dot"></div>
+      <div class="alert-content"><div class="alert-title">Repeated Complaint Detected</div><div class="alert-desc">"Lab equipment not working" mentioned 24 times across 3 courses.</div></div>
+      <div class="alert-time">5h ago</div>
+    </div>
+    <div class="alert-item warning" style="animation-delay:0.2s">
+      <div class="alert-dot"></div>
+      <div class="alert-content"><div class="alert-title">Rating Drop — Dr. Meera Sharma</div><div class="alert-desc">Average rating fell from 4.1 → 3.2 over last 2 weeks.</div></div>
+      <div class="alert-time">1d ago</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ SENTIMENT PAGE ═══════ -->
+<div id="page-sentiment" class="page">
+  <div class="page-header">
+    <div class="page-title">Sentiment Analysis</div>
+    <div class="page-sub">Deep-dive into student sentiment patterns across courses and departments</div>
+  </div>
+
+  <div class="sentiment-row section-mb">
+    <div class="card">
+      <div class="card-title"><span>◑</span> Overall Split</div>
+      <div class="chart-wrap" style="height:220px;"><canvas id="chart-pie-senti"></canvas></div>
+      <div class="divider"></div>
+      <div class="stat-row">
+        <div class="stat-item"><div class="sv text-green">864</div><div class="sl">Positive</div></div>
+        <div class="stat-item"><div class="sv text-amber">120</div><div class="sl">Neutral</div></div>
+        <div class="stat-item"><div class="sv text-red">216</div><div class="sl">Negative</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>〜</span> Weekly Sentiment Trend</div>
+      <div class="chart-wrap"><canvas id="chart-trend-senti"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card section-mb">
+    <div class="card-title"><span>▦</span> Department Comparison</div>
+    <div class="chart-wrap" style="height:280px;"><canvas id="chart-dept-bar"></canvas></div>
+  </div>
+
+  <div class="card section-mb">
+    <div class="card-title" style="justify-content:space-between;">
+      <span><span>◉</span> Faculty-wise Sentiment</span>
+      <div style="display:flex;gap:6px;">
+        <div class="chip active">All</div>
+        <div class="chip">CSE</div>
+        <div class="chip">ECE</div>
+        <div class="chip">AI/ML</div>
+        <div class="chip">IT</div>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Faculty ↕</th>
+          <th>Course ↕</th>
+          <th>Dept</th>
+          <th>Positive % ↕</th>
+          <th>Negative % ↕</th>
+          <th>Avg Rating ↕</th>
+          <th>Trend</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="fw7">Dr. R. Patel</td><td>Machine Learning</td><td><span class="badge badge-blue">AI/ML</span></td><td class="text-green fw7">88%</td><td class="text-red">6%</td><td><span class="stars">★★★★★</span> 4.8</td><td class="text-green">▲ +5%</td><td><span class="badge badge-green">Excellent</span></td></tr>
+        <tr><td class="fw7">Dr. S. Kumar</td><td>Data Structures</td><td><span class="badge badge-purple">CSE</span></td><td class="text-green fw7">81%</td><td class="text-red">10%</td><td><span class="stars">★★★★☆</span> 4.3</td><td class="text-green">▲ +2%</td><td><span class="badge badge-green">Good</span></td></tr>
+        <tr><td class="fw7">Prof. A. Nair</td><td>Computer Networks</td><td><span class="badge badge-purple">CSE</span></td><td class="text-green fw7">74%</td><td class="text-red">15%</td><td><span class="stars">★★★★☆</span> 4.1</td><td class="text-amber">◆ 0%</td><td><span class="badge badge-blue">Average</span></td></tr>
+        <tr><td class="fw7">Dr. M. Sharma</td><td>DBMS</td><td><span class="badge badge-purple">CSE</span></td><td class="text-amber fw7">52%</td><td class="text-red">38%</td><td><span class="stars">★★★☆☆</span> 3.2</td><td class="text-red">▼ -9%</td><td><span class="badge badge-amber">Watch</span></td></tr>
+        <tr><td class="fw7">Prof. K. Iyer</td><td>Operating Systems</td><td><span class="badge badge-purple">CSE</span></td><td class="text-red fw7">44%</td><td class="text-red">48%</td><td><span class="stars">★★☆☆☆</span> 2.4</td><td class="text-red">▼ -12%</td><td><span class="badge badge-red">Critical</span></td></tr>
+        <tr><td class="fw7">Dr. P. Reddy</td><td>Digital Electronics</td><td><span class="badge badge-amber">ECE</span></td><td class="text-green fw7">77%</td><td class="text-red">12%</td><td><span class="stars">★★★★☆</span> 4.2</td><td class="text-green">▲ +3%</td><td><span class="badge badge-green">Good</span></td></tr>
+        <tr><td class="fw7">Prof. V. Singh</td><td>Deep Learning</td><td><span class="badge badge-blue">AI/ML</span></td><td class="text-green fw7">83%</td><td class="text-red">8%</td><td><span class="stars">★★★★★</span> 4.6</td><td class="text-green">▲ +7%</td><td><span class="badge badge-green">Excellent</span></td></tr>
+      </tbody>
+    </table>
+    <div class="pagination">
+      <div class="pg-btn active">1</div>
+      <div class="pg-btn">2</div>
+      <div class="pg-btn">3</div>
+      <div class="pg-btn">→</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ TOPICS PAGE ═══════ -->
+<div id="page-topics" class="page">
+  <div class="page-header">
+    <div class="page-title">Topic Analysis</div>
+    <div class="page-sub">NLP-extracted topics and keyword distribution from student feedback</div>
+  </div>
+
+  <div class="topic-grid section-mb">
+    <div class="topic-card">
+      <div class="topic-card-icon">🎓</div>
+      <div class="topic-card-name">Teaching Quality</div>
+      <div class="topic-card-pct">42%</div>
+      <div class="topic-card-bar"><div class="prog-bar-wrap"><div class="prog-bar" style="width:42%;background:var(--green);"></div></div></div>
+      <div class="topic-card-senti">70% positive · 30% negative</div>
+    </div>
+    <div class="topic-card">
+      <div class="topic-card-icon">📝</div>
+      <div class="topic-card-name">Assignments</div>
+      <div class="topic-card-pct">25%</div>
+      <div class="topic-card-bar"><div class="prog-bar-wrap"><div class="prog-bar" style="width:25%;background:var(--red);"></div></div></div>
+      <div class="topic-card-senti">40% positive · 60% negative</div>
+    </div>
+    <div class="topic-card">
+      <div class="topic-card-icon">📊</div>
+      <div class="topic-card-name">Exam Difficulty</div>
+      <div class="topic-card-pct">18%</div>
+      <div class="topic-card-bar"><div class="prog-bar-wrap"><div class="prog-bar" style="width:18%;background:var(--amber);"></div></div></div>
+      <div class="topic-card-senti">35% positive · 65% negative</div>
+    </div>
+    <div class="topic-card">
+      <div class="topic-card-icon">🔬</div>
+      <div class="topic-card-name">Lab Facilities</div>
+      <div class="topic-card-pct">10%</div>
+      <div class="topic-card-bar"><div class="prog-bar-wrap"><div class="prog-bar" style="width:10%;background:var(--red);"></div></div></div>
+      <div class="topic-card-senti">20% positive · 80% negative</div>
+    </div>
+    <div class="topic-card">
+      <div class="topic-card-icon">💬</div>
+      <div class="topic-card-name">Others</div>
+      <div class="topic-card-pct">5%</div>
+      <div class="topic-card-bar"><div class="prog-bar-wrap"><div class="prog-bar" style="width:5%;background:var(--accent);"></div></div></div>
+      <div class="topic-card-senti">55% positive · 45% negative</div>
+    </div>
+  </div>
+
+  <!-- WORD CLOUD -->
+  <div class="card section-mb">
+    <div class="card-title"><span>☁</span> Keyword Cloud</div>
+    <div id="word-cloud"></div>
+  </div>
+
+  <!-- TOPIC SENTIMENT TABLE + DONUT -->
+  <div class="charts-grid-2 section-mb">
+    <div class="card">
+      <div class="card-title"><span>◈</span> Topic Sentiment Breakdown</div>
+      <table class="data-table">
+        <thead><tr><th>Topic</th><th>Mentions</th><th>Positive</th><th>Negative</th><th>Net Score</th></tr></thead>
+        <tbody>
+          <tr><td class="fw7">Teaching Quality</td><td>504</td><td class="text-green">70%</td><td class="text-red">30%</td><td><span class="badge badge-green">+40</span></td></tr>
+          <tr><td class="fw7">Communication</td><td>250</td><td class="text-green">62%</td><td class="text-red">38%</td><td><span class="badge badge-green">+24</span></td></tr>
+          <tr><td class="fw7">Assignments</td><td>300</td><td class="text-amber">40%</td><td class="text-red">60%</td><td><span class="badge badge-red">−20</span></td></tr>
+          <tr><td class="fw7">Exam Difficulty</td><td>216</td><td class="text-amber">35%</td><td class="text-red">65%</td><td><span class="badge badge-red">−30</span></td></tr>
+          <tr><td class="fw7">Lab Facilities</td><td>120</td><td class="text-red">20%</td><td class="text-red">80%</td><td><span class="badge badge-red">−60</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>◕</span> Topic Distribution</div>
+      <div class="chart-wrap"><canvas id="chart-donut-topics"></canvas></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ FACULTY PAGE ═══════ -->
+<div id="page-faculty" class="page">
+  <div class="page-header">
+    <div class="page-title">Faculty Comparison</div>
+    <div class="page-sub">Side-by-side performance metrics across all faculty members</div>
+  </div>
+
+  <div class="faculty-grid section-mb">
+    <div class="faculty-card">
+      <div class="faculty-card-header">
+        <div class="faculty-avatar" style="background:linear-gradient(135deg,#4F8EF7,#6C63FF)">RP</div>
+        <div><div class="faculty-name">Dr. R. Patel</div><div class="faculty-course">Machine Learning · AI/ML</div></div>
+        <span class="badge badge-green" style="margin-left:auto">Excellent</span>
+      </div>
+      <div class="faculty-stats">
+        <div class="faculty-stat"><div class="faculty-stat-val text-green">88%</div><div class="faculty-stat-lbl">Positive</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-red">6%</div><div class="faculty-stat-lbl">Negative</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-amber">4.8</div><div class="faculty-stat-lbl">Avg Rating</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-accent">142</div><div class="faculty-stat-lbl">Responses</div></div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Positive</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:88%;background:var(--green);"></div></div><div class="dept-bar-val">88%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Neutral</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:6%;background:var(--amber);"></div></div><div class="dept-bar-val">6%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Negative</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:6%;background:var(--red);"></div></div><div class="dept-bar-val">6%</div></div>
+      </div>
+    </div>
+
+    <div class="faculty-card">
+      <div class="faculty-card-header">
+        <div class="faculty-avatar" style="background:linear-gradient(135deg,#F87171,#F59E0B)">KI</div>
+        <div><div class="faculty-name">Prof. K. Iyer</div><div class="faculty-course">Operating Systems · CSE</div></div>
+        <span class="badge badge-red" style="margin-left:auto">Critical</span>
+      </div>
+      <div class="faculty-stats">
+        <div class="faculty-stat"><div class="faculty-stat-val text-red">44%</div><div class="faculty-stat-lbl">Positive</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-red">48%</div><div class="faculty-stat-lbl">Negative</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-red">2.4</div><div class="faculty-stat-lbl">Avg Rating</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-accent">189</div><div class="faculty-stat-lbl">Responses</div></div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Positive</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:44%;background:var(--green);"></div></div><div class="dept-bar-val">44%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Neutral</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:8%;background:var(--amber);"></div></div><div class="dept-bar-val">8%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Negative</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:48%;background:var(--red);"></div></div><div class="dept-bar-val">48%</div></div>
+      </div>
+    </div>
+
+    <div class="faculty-card">
+      <div class="faculty-card-header">
+        <div class="faculty-avatar" style="background:linear-gradient(135deg,#34D399,#059669)">VS</div>
+        <div><div class="faculty-name">Prof. V. Singh</div><div class="faculty-course">Deep Learning · AI/ML</div></div>
+        <span class="badge badge-green" style="margin-left:auto">Excellent</span>
+      </div>
+      <div class="faculty-stats">
+        <div class="faculty-stat"><div class="faculty-stat-val text-green">83%</div><div class="faculty-stat-lbl">Positive</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-red">8%</div><div class="faculty-stat-lbl">Negative</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-amber">4.6</div><div class="faculty-stat-lbl">Avg Rating</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-accent">116</div><div class="faculty-stat-lbl">Responses</div></div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Positive</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:83%;background:var(--green);"></div></div><div class="dept-bar-val">83%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Neutral</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:9%;background:var(--amber);"></div></div><div class="dept-bar-val">9%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Negative</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:8%;background:var(--red);"></div></div><div class="dept-bar-val">8%</div></div>
+      </div>
+    </div>
+
+    <div class="faculty-card">
+      <div class="faculty-card-header">
+        <div class="faculty-avatar" style="background:linear-gradient(135deg,#FBBF24,#F59E0B)">MS</div>
+        <div><div class="faculty-name">Dr. M. Sharma</div><div class="faculty-course">DBMS · CSE</div></div>
+        <span class="badge badge-amber" style="margin-left:auto">Watch</span>
+      </div>
+      <div class="faculty-stats">
+        <div class="faculty-stat"><div class="faculty-stat-val text-amber">52%</div><div class="faculty-stat-lbl">Positive</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-red">38%</div><div class="faculty-stat-lbl">Negative</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-amber">3.2</div><div class="faculty-stat-lbl">Avg Rating</div></div>
+        <div class="faculty-stat"><div class="faculty-stat-val text-accent">203</div><div class="faculty-stat-lbl">Responses</div></div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Positive</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:52%;background:var(--green);"></div></div><div class="dept-bar-val">52%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Neutral</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:10%;background:var(--amber);"></div></div><div class="dept-bar-val">10%</div></div>
+        <div class="dept-bar-row"><div class="dept-bar-label" style="width:90px;font-size:11px;color:var(--text-mute);">Negative</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:38%;background:var(--red);"></div></div><div class="dept-bar-val">38%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card section-mb">
+    <div class="card-title"><span>▦</span> Faculty Rating Comparison</div>
+    <div class="chart-wrap" style="height:280px;"><canvas id="chart-faculty-bar"></canvas></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ AI SUMMARY PAGE ═══════ -->
+<div id="page-aisummary" class="page">
+  <div class="page-header">
+    <div class="page-header-row">
+      <div>
+        <div class="page-title">AI-Generated Summary</div>
+        <div class="page-sub">LLM-powered insights from 1,200 feedback responses · Generated today, 09:14 AM</div>
+      </div>
+      <button class="btn btn-primary">↻ Regenerate</button>
+    </div>
+  </div>
+
+  <div style="background:rgba(79,142,247,0.06);border:1px solid rgba(79,142,247,0.2);border-radius:var(--radius);padding:14px 18px;margin-bottom:24px;display:flex;gap:12px;align-items:center;">
+    <span style="font-size:20px;">✦</span>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:2px;">AI Analysis Complete</div>
+      <div style="font-size:12px;color:var(--text-dim);">This dashboard helps colleges quickly understand student concerns and improve teaching quality using NLP and AI while preserving complete privacy. Based on 1,200 anonymized responses.</div>
+    </div>
+  </div>
+
+  <div class="ai-summary-grid section-mb">
+    <div class="ai-card strengths">
+      <div class="ai-card-glow"></div>
+      <div class="ai-card-icon">💚</div>
+      <div class="ai-card-title">Main Strengths</div>
+      <ul class="ai-card-list">
+        <li>Students appreciate practical, example-driven teaching approaches</li>
+        <li>Faculty in AI/ML department receive consistently high ratings</li>
+        <li>Most students report satisfaction with faculty availability</li>
+        <li>Deep Learning and ML course content is highly praised</li>
+        <li>Interactive classroom sessions noted as very effective</li>
+      </ul>
+    </div>
+    <div class="ai-card problems">
+      <div class="ai-card-glow"></div>
+      <div class="ai-card-icon">⚠️</div>
+      <div class="ai-card-title">Main Problems</div>
+      <ul class="ai-card-list">
+        <li>Lab equipment failures repeatedly reported across 3 courses</li>
+        <li>Assignment frequency in CSE department is excessively high</li>
+        <li>Operating Systems course has critically low satisfaction (2.4★)</li>
+        <li>DBMS course negative sentiment crossed 40% threshold</li>
+        <li>Exam difficulty perceived as unfair by 65% of respondents</li>
+      </ul>
+    </div>
+    <div class="ai-card suggest">
+      <div class="ai-card-glow"></div>
+      <div class="ai-card-icon">🚀</div>
+      <div class="ai-card-title">Suggested Improvements</div>
+      <ul class="ai-card-list">
+        <li>Conduct urgent review of OS course curriculum and delivery</li>
+        <li>Audit and reduce assignment load in CSE by at least 20%</li>
+        <li>Prioritize lab equipment maintenance before next semester</li>
+        <li>Provide additional training to Prof. K. Iyer on pedagogy</li>
+        <li>Introduce DBMS practical sessions to improve engagement</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="charts-grid-2 section-mb">
+    <div class="card">
+      <div class="card-title"><span>◉</span> Sentiment Score by Month</div>
+      <div class="chart-wrap"><canvas id="chart-ai-trend"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>◈</span> Issue Priority Matrix</div>
+      <div style="margin-top:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;"><span class="badge badge-red">P1</span><span>Lab infrastructure overhaul</span></div>
+          <span class="text-red fw7">Urgent</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;"><span class="badge badge-red">P1</span><span>OS course restructure</span></div>
+          <span class="text-red fw7">Urgent</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;"><span class="badge badge-amber">P2</span><span>Assignment policy revision</span></div>
+          <span class="text-amber fw7">High</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;"><span class="badge badge-amber">P2</span><span>DBMS course intervention</span></div>
+          <span class="text-amber fw7">High</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
+          <div style="display:flex;align-items:center;gap:10px;"><span class="badge badge-blue">P3</span><span>Exam format review</span></div>
+          <span class="text-accent fw7">Medium</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ ALERTS PAGE ═══════ -->
+<div id="page-alerts" class="page">
+  <div class="page-header">
+    <div class="page-header-row">
+      <div>
+        <div class="page-title">Alerts & Notifications</div>
+        <div class="page-sub">Automatic threshold-based alerts · 3 active, 2 resolved</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost">Mark All Read</button>
+        <button class="btn btn-primary">Configure Thresholds</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card section-mb">
+    <div class="card-title"><span>🔴</span> Critical Alerts</div>
+    <div class="alert-item critical" style="animation-delay:0s">
+      <div class="alert-dot"></div>
+      <div class="alert-content">
+        <div class="alert-title">High Negative Sentiment — Operating Systems</div>
+        <div class="alert-desc">Negative sentiment in OS course (Prof. K. Iyer) has reached 48%, exceeding the 40% critical threshold. Immediate intervention recommended.</div>
+        <div style="margin-top:6px;display:flex;gap:8px;"><span class="badge badge-red">48% Negative</span><span class="badge badge-purple">CSE Dept</span></div>
+      </div>
+      <div class="alert-time">2h ago</div>
+    </div>
+    <div class="alert-item critical" style="animation-delay:0.1s">
+      <div class="alert-dot"></div>
+      <div class="alert-content">
+        <div class="alert-title">Critical Rating Drop — Prof. K. Iyer</div>
+        <div class="alert-desc">Average rating fell from 4.1 to 2.4 over the past 3 weeks — a drop of 1.7 stars. Rating is now below the 2.5 threshold.</div>
+        <div style="margin-top:6px;display:flex;gap:8px;"><span class="badge badge-red">2.4★ Rating</span><span class="badge badge-purple">OS Course</span></div>
+      </div>
+      <div class="alert-time">4h ago</div>
+    </div>
+  </div>
+
+  <div class="card section-mb">
+    <div class="card-title"><span>🟡</span> Warning Alerts</div>
+    <div class="alert-item warning" style="animation-delay:0.2s">
+      <div class="alert-dot"></div>
+      <div class="alert-content">
+        <div class="alert-title">Repeated Complaint — Lab Equipment</div>
+        <div class="alert-desc">"Lab equipment not working" has been mentioned 24 times across CSE and ECE departments in the last 2 weeks.</div>
+        <div style="margin-top:6px;display:flex;gap:8px;"><span class="badge badge-amber">24 mentions</span><span class="badge badge-amber">3 courses</span></div>
+      </div>
+      <div class="alert-time">5h ago</div>
+    </div>
+    <div class="alert-item warning" style="animation-delay:0.3s">
+      <div class="alert-dot"></div>
+      <div class="alert-content">
+        <div class="alert-title">High Negative Sentiment — DBMS Course</div>
+        <div class="alert-desc">DBMS course (Dr. M. Sharma) negative sentiment is at 38%, approaching the 40% threshold. Monitoring closely.</div>
+        <div style="margin-top:6px;display:flex;gap:8px;"><span class="badge badge-amber">38% Negative</span><span class="badge badge-purple">CSE Dept</span></div>
+      </div>
+      <div class="alert-time">1d ago</div>
+    </div>
+  </div>
+
+  <div class="card section-mb">
+    <div class="card-title"><span>🟢</span> Resolved</div>
+    <div class="alert-item stable" style="animation-delay:0.4s;opacity:0.7">
+      <div class="alert-dot"></div>
+      <div class="alert-content">
+        <div class="alert-title">ML Course Sentiment Restored</div>
+        <div class="alert-desc">Sentiment in Machine Learning course improved from 62% → 88% positive after curriculum changes. Alert resolved.</div>
+      </div>
+      <div class="alert-time">3d ago</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>⚙</span> Alert Thresholds</div>
+    <table class="data-table">
+      <thead><tr><th>Alert Type</th><th>Threshold</th><th>Current Best</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Negative Sentiment</td><td class="mono">＞ 40%</td><td class="text-red">48% (OS)</td><td><span class="badge badge-red">Triggered</span></td></tr>
+        <tr><td>Average Rating</td><td class="mono">＜ 2.5★</td><td class="text-red">2.4★ (OS)</td><td><span class="badge badge-red">Triggered</span></td></tr>
+        <tr><td>Repeated Complaint</td><td class="mono">＞ 15 mentions</td><td class="text-amber">24 (Lab)</td><td><span class="badge badge-amber">Warning</span></td></tr>
+        <tr><td>Sentiment Trend Drop</td><td class="mono">＞ 10% weekly</td><td class="text-green">Max 7%</td><td><span class="badge badge-green">Stable</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ EXPLORER PAGE ═══════ -->
+<div id="page-explorer" class="page">
+  <div class="page-header">
+    <div class="page-title">Feedback Explorer</div>
+    <div class="page-sub">Browse anonymized student feedback · All identifiers removed for privacy</div>
+  </div>
+
+  <div style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+    <span>🔒</span>
+    <div style="font-size:12px;color:var(--text-dim);">All student names, roll numbers, and identifying information have been automatically removed. Personal references replaced with <span class="badge badge-green" style="font-size:10px;">[NAME]</span></div>
+  </div>
+
+  <div class="filter-row">
+    <select class="filter-select">
+      <option>All Sentiments</option>
+      <option>Positive</option>
+      <option>Neutral</option>
+      <option>Negative</option>
+    </select>
+    <select class="filter-select">
+      <option>All Departments</option>
+      <option>CSE</option>
+      <option>ECE</option>
+      <option>AI/ML</option>
+      <option>IT</option>
+    </select>
+    <select class="filter-select">
+      <option>All Topics</option>
+      <option>Teaching Quality</option>
+      <option>Assignments</option>
+      <option>Lab Facilities</option>
+      <option>Exam Difficulty</option>
+      <option>Communication</option>
+    </select>
+    <select class="filter-select">
+      <option>Last 30 Days</option>
+      <option>Last 7 Days</option>
+      <option>Last Quarter</option>
+      <option>This Semester</option>
+    </select>
+    <div class="filter-search-wrap">
+      <input class="filter-search" type="text" placeholder="Search comments…">
+    </div>
+  </div>
+
+  <div class="card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date ↕</th>
+          <th>Course ↕</th>
+          <th>Dept</th>
+          <th>Sentiment ↕</th>
+          <th>Topic</th>
+          <th>Comment</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono" style="font-size:11px;">2025-01-14</td>
+          <td>Machine Learning</td>
+          <td><span class="badge badge-blue">AI/ML</span></td>
+          <td><span class="badge badge-green">Positive</span></td>
+          <td><span class="badge badge-purple">Teaching</span></td>
+          <td><div class="comment-text">Really enjoyed the practical sessions. The real-world examples made concepts much clearer.</div><div class="anon-tag">ID: #anon-4721</div></td>
+        </tr>
+        <tr>
+          <td class="mono" style="font-size:11px;">2025-01-14</td>
+          <td>Operating Systems</td>
+          <td><span class="badge badge-purple">CSE</span></td>
+          <td><span class="badge badge-red">Negative</span></td>
+          <td><span class="badge badge-amber">Teaching</span></td>
+          <td><div class="comment-text">The pace of teaching is too slow and difficult to follow. Assignments are also very heavy.</div><div class="anon-tag">ID: #anon-3892</div></td>
+        </tr>
+        <tr>
+          <td class="mono" style="font-size:11px;">2025-01-13</td>
+          <td>DBMS</td>
+          <td><span class="badge badge-purple">CSE</span></td>
+          <td><span class="badge badge-red">Negative</span></td>
+          <td><span class="badge badge-red">Lab</span></td>
+          <td><div class="comment-text">Lab computers crash frequently. It is very difficult to complete practicals in the given time.</div><div class="anon-tag">ID: #anon-5104</div></td>
+        </tr>
+        <tr>
+          <td class="mono" style="font-size:11px;">2025-01-13</td>
+          <td>Deep Learning</td>
+          <td><span class="badge badge-blue">AI/ML</span></td>
+          <td><span class="badge badge-green">Positive</span></td>
+          <td><span class="badge badge-purple">Teaching</span></td>
+          <td><div class="comment-text">Best course this semester. [NAME] explains complex concepts in very simple language. More sessions please!</div><div class="anon-tag">ID: #anon-2287</div></td>
+        </tr>
+        <tr>
+          <td class="mono" style="font-size:11px;">2025-01-12</td>
+          <td>Data Structures</td>
+          <td><span class="badge badge-purple">CSE</span></td>
+          <td><span class="badge badge-amber">Neutral</span></td>
+          <td><span class="badge badge-amber">Assignments</span></td>
+          <td><div class="comment-text">Too many assignments every week. I understand the topics but the load is exhausting after other subjects.</div><div class="anon-tag">ID: #anon-6631</div></td>
+        </tr>
+        <tr>
+          <td class="mono" style="font-size:11px;">2025-01-12</td>
+          <td>Digital Electronics</td>
+          <td><span class="badge badge-amber">ECE</span></td>
+          <td><span class="badge badge-green">Positive</span></td>
+          <td><span class="badge badge-green">Teaching</span></td>
+          <td><div class="comment-text">Very interactive classes. The live circuit demos were really helpful. Looking forward to more practicals.</div><div class="anon-tag">ID: #anon-8812</div></td>
+        </tr>
+        <tr>
+          <td class="mono" style="font-size:11px;">2025-01-11</td>
+          <td>Computer Networks</td>
+          <td><span class="badge badge-purple">CSE</span></td>
+          <td><span class="badge badge-amber">Neutral</span></td>
+          <td><span class="badge badge-amber">Exam</span></td>
+          <td><div class="comment-text">The exam was unexpectedly difficult. Topics not covered in class appeared in the paper.</div><div class="anon-tag">ID: #anon-3341</div></td>
+        </tr>
+        <tr>
+          <td class="mono" style="font-size:11px;">2025-01-10</td>
+          <td>Operating Systems</td>
+          <td><span class="badge badge-purple">CSE</span></td>
+          <td><span class="badge badge-red">Negative</span></td>
+          <td><span class="badge badge-red">Lab</span></td>
+          <td><div class="comment-text">Lab equipment not working for the third time this month. This is affecting our practicals heavily.</div><div class="anon-tag">ID: #anon-7729</div></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pagination">
+      <div class="pg-btn active">1</div>
+      <div class="pg-btn">2</div>
+      <div class="pg-btn">3</div>
+      <div class="pg-btn">…</div>
+      <div class="pg-btn">12</div>
+      <div class="pg-btn">→</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ REPORTS PAGE ═══════ -->
+<div id="page-reports" class="page">
+  <div class="page-header">
+    <div class="page-header-row">
+      <div>
+        <div class="page-title">Reports</div>
+        <div class="page-sub">Download and schedule automated reports</div>
+      </div>
+      <button class="btn btn-primary">+ Generate New Report</button>
+    </div>
+  </div>
+  <div class="card section-mb">
+    <div class="card-title"><span>↓</span> Recent Reports</div>
+    <div class="report-item">
+      <div class="report-icon">📊</div>
+      <div style="flex:1"><div class="report-title">Monthly Sentiment Report — January 2025</div><div class="report-meta">Generated Jan 15, 2025 · PDF · 2.4 MB</div></div>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;">↓ Download</button>
+    </div>
+    <div class="report-item">
+      <div class="report-icon">🎓</div>
+      <div style="flex:1"><div class="report-title">Faculty Performance Summary Q4 2024</div><div class="report-meta">Generated Dec 31, 2024 · PDF · 1.8 MB</div></div>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;">↓ Download</button>
+    </div>
+    <div class="report-item">
+      <div class="report-icon">🔬</div>
+      <div style="flex:1"><div class="report-title">Department Comparison — Semester 1</div><div class="report-meta">Generated Dec 15, 2024 · PDF · 3.1 MB</div></div>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;">↓ Download</button>
+    </div>
+    <div class="report-item">
+      <div class="report-icon">🤖</div>
+      <div style="flex:1"><div class="report-title">AI Insights Summary — Full Year 2024</div><div class="report-meta">Generated Dec 1, 2024 · PDF · 4.7 MB</div></div>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px;">↓ Download</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ SETTINGS PAGE ═══════ -->
+<div id="page-settings" class="page">
+  <div class="page-header">
+    <div class="page-title">Settings</div>
+    <div class="page-sub">Configure dashboard preferences, alerts, and privacy controls</div>
+  </div>
+
+  <div class="settings-grid">
+    <div class="card">
+      <div class="card-title"><span>⊙</span> General</div>
+      <div class="setting-group"><label class="setting-label">Institution Name</label><input class="setting-input" value="National Institute of Technology" type="text"></div>
+      <div class="setting-group"><label class="setting-label">Default Date Range</label>
+        <select class="setting-input" style="cursor:pointer;"><option>Last 30 Days</option><option>Last Quarter</option><option>Academic Year</option></select>
+      </div>
+      <div class="setting-group"><label class="setting-label">Default Department</label>
+        <select class="setting-input" style="cursor:pointer;"><option>All Departments</option><option>CSE</option><option>ECE</option><option>AI/ML</option></select>
+      </div>
+      <button class="btn btn-primary" style="margin-top:8px;">Save Changes</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>⚑</span> Alert Thresholds</div>
+      <div class="setting-group"><label class="setting-label">Negative Sentiment Threshold (%)</label><input class="setting-input" type="number" value="40"></div>
+      <div class="setting-group"><label class="setting-label">Minimum Rating Threshold (★)</label><input class="setting-input" type="number" value="2.5" step="0.1"></div>
+      <div class="setting-group"><label class="setting-label">Repeat Complaint Threshold (count)</label><input class="setting-input" type="number" value="15"></div>
+      <button class="btn btn-primary" style="margin-top:8px;">Update Thresholds</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>🔒</span> Privacy Controls</div>
+      <div class="setting-toggle">
+        <div class="toggle-info"><div class="toggle-title">Auto-anonymize Feedback</div><div class="toggle-desc">Automatically remove names and IDs</div></div>
+        <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="setting-toggle">
+        <div class="toggle-info"><div class="toggle-title">Mask Roll Numbers</div><div class="toggle-desc">Replace roll numbers with anon IDs</div></div>
+        <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="setting-toggle">
+        <div class="toggle-info"><div class="toggle-title">Hide Faculty Names in Export</div><div class="toggle-desc">Use codes in exported reports</div></div>
+        <div class="toggle-switch" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="setting-toggle">
+        <div class="toggle-info"><div class="toggle-title">Student Access Portal</div><div class="toggle-desc">Allow students to view aggregate data</div></div>
+        <div class="toggle-switch" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>✉</span> Notifications</div>
+      <div class="setting-toggle">
+        <div class="toggle-info"><div class="toggle-title">Email Alerts (Critical)</div><div class="toggle-desc">Send email on critical threshold breach</div></div>
+        <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="setting-toggle">
+        <div class="toggle-info"><div class="toggle-title">Weekly Digest Email</div><div class="toggle-desc">Summary every Monday morning</div></div>
+        <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="setting-toggle">
+        <div class="toggle-info"><div class="toggle-title">Faculty Notifications</div><div class="toggle-desc">Notify faculty of their own metrics</div></div>
+        <div class="toggle-switch" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main><!-- end #main -->
+
+<script>
+/* ════════════════════════════════════════ NAVIGATION ═══════ */
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+  const sideItem = document.querySelector(`.sidebar-item[data-page="${page}"]`);
+  if (sideItem) sideItem.classList.add('active');
+  initPageCharts(page);
+}
+
+document.querySelectorAll('.sidebar-item').forEach(item => {
+  item.addEventListener('click', () => navigateTo(item.dataset.page));
+});
+
+/* ════════════════════════════════════════ KPI COUNTER ANIMATION ═══════ */
+function animateCounter(el, target, suffix = '', duration = 1400) {
+  let start = 0, startTime = null;
+  const step = (timestamp) => {
+    if (!startTime) startTime = timestamp;
+    const progress = Math.min((timestamp - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.floor(eased * target);
+    el.textContent = current.toLocaleString() + suffix;
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = target.toLocaleString() + suffix;
+  };
+  requestAnimationFrame(step);
+}
+
+function animateFloat(el, target, suffix = '', decimals = 1, duration = 1400) {
+  let startTime = null;
+  const step = (timestamp) => {
+    if (!startTime) startTime = timestamp;
+    const progress = Math.min((timestamp - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = (eased * target).toFixed(decimals) + suffix;
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = target.toFixed(decimals) + suffix;
+  };
+  requestAnimationFrame(step);
+}
+
+/* ════════════════════════════════════════ CHART CONFIG ═══════ */
+const CHART_DEFAULTS = {
+  color: { positive: '#34D399', negative: '#F87171', neutral: '#FBBF24', accent: '#4F8EF7', purple: '#A78BFA', teal: '#2DD4BF' },
+  grid: { color: 'rgba(30,42,64,0.8)', borderColor: 'rgba(30,42,64,0.0)' },
+  ticks: { color: '#4A5568', font: { family: 'DM Mono', size: 10 } },
+  tooltip: {
+    backgroundColor: '#0D1120',
+    borderColor: '#1E2A40',
+    borderWidth: 1,
+    titleColor: '#E8EDF5',
+    bodyColor: '#8A96B0',
+    padding: 12,
+    cornerRadius: 8,
+    titleFont: { family: 'Syne', size: 13 },
+    bodyFont: { family: 'DM Sans', size: 12 },
+  }
+};
+Chart.defaults.color = '#8A96B0';
+Chart.defaults.font.family = 'DM Sans';
+
+const chartsInit = {};
+
+function initPageCharts(page) {
+  if (chartsInit[page]) return;
+  chartsInit[page] = true;
+
+  if (page === 'home') {
+    initHomeCharts();
+  } else if (page === 'sentiment') {
+    initSentimentCharts();
+  } else if (page === 'topics') {
+    initTopicCharts();
+    buildWordCloud();
+  } else if (page === 'faculty') {
+    initFacultyCharts();
+  } else if (page === 'aisummary') {
+    initAICharts();
+  }
+}
+
+/* ─── HOME CHARTS ─── */
+function initHomeCharts() {
+  // KPI counters
+  setTimeout(() => {
+    animateCounter(document.getElementById('kpi-total'), 1200);
+    animateCounter(document.getElementById('kpi-pos'), 72, '%');
+    animateCounter(document.getElementById('kpi-neg'), 18, '%');
+    animateFloat(document.getElementById('kpi-rating'), 4.1, '', 1);
+  }, 2300);
+
+  // Pie
+  new Chart(document.getElementById('chart-pie-home'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Positive', 'Neutral', 'Negative'],
+      datasets: [{ data: [72, 10, 18], backgroundColor: ['#34D399', '#FBBF24', '#F87171'], borderWidth: 0, hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '70%',
+      plugins: { legend: { display: false }, tooltip: CHART_DEFAULTS.tooltip }
+    }
+  });
+
+  // Trend
+  const weeks = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+  new Chart(document.getElementById('chart-trend-home'), {
+    type: 'line',
+    data: {
+      labels: weeks,
+      datasets: [
+        { label: 'Positive', data: [58,62,65,64,68,70,69,72,74,73,76,78], borderColor:'#34D399', backgroundColor:'rgba(52,211,153,0.08)', tension:0.4, fill:true, pointRadius:3, pointBackgroundColor:'#34D399' },
+        { label: 'Negative', data: [28,26,24,22,21,20,19,18,17,16,15,14], borderColor:'#F87171', backgroundColor:'rgba(248,113,113,0.06)', tension:0.4, fill:true, pointRadius:3, pointBackgroundColor:'#F87171' },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales: {
+        x: { grid: CHART_DEFAULTS.grid, ticks: CHART_DEFAULTS.ticks },
+        y: { grid: CHART_DEFAULTS.grid, ticks: {...CHART_DEFAULTS.ticks, callback: v => v+'%'}, min:0, max:100 }
+      },
+      plugins: { legend: { display:true, labels:{ color:'#8A96B0', font:{family:'DM Sans',size:11}, boxWidth:10 } }, tooltip: CHART_DEFAULTS.tooltip }
+    }
+  });
+
+  // Dept home
+  new Chart(document.getElementById('chart-dept-home'), {
+    type: 'bar',
+    data: {
+      labels: ['CSE','ECE','AI/ML','IT'],
+      datasets: [
+        { label:'Positive', data:[68,78,88,74], backgroundColor:'rgba(52,211,153,0.7)', borderRadius:4 },
+        { label:'Negative', data:[22,15,7,18], backgroundColor:'rgba(248,113,113,0.7)', borderRadius:4 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales: {
+        x: { grid: CHART_DEFAULTS.grid, ticks: CHART_DEFAULTS.ticks },
+        y: { grid: CHART_DEFAULTS.grid, ticks: {...CHART_DEFAULTS.ticks, callback: v => v+'%'}, min:0, max:100 }
+      },
+      plugins: { legend: { display:true, labels:{ color:'#8A96B0', font:{family:'DM Sans',size:11}, boxWidth:10 } }, tooltip: CHART_DEFAULTS.tooltip }
+    }
+  });
+}
+
+/* ─── SENTIMENT CHARTS ─── */
+function initSentimentCharts() {
+  new Chart(document.getElementById('chart-pie-senti'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Positive','Neutral','Negative'],
+      datasets: [{ data:[72,10,18], backgroundColor:['#34D399','#FBBF24','#F87171'], borderWidth:0, hoverOffset:10 }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, cutout:'72%',
+      plugins: { legend:{ display:false }, tooltip: CHART_DEFAULTS.tooltip }
+    }
+  });
+
+  const months = ['Aug','Sep','Oct','Nov','Dec','Jan'];
+  new Chart(document.getElementById('chart-trend-senti'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        { label:'Positive', data:[60,63,66,69,72,75], borderColor:'#34D399', backgroundColor:'rgba(52,211,153,0.08)', tension:0.4, fill:true, pointRadius:4, pointHoverRadius:6 },
+        { label:'Neutral',  data:[18,16,14,12,10,9],  borderColor:'#FBBF24', backgroundColor:'rgba(251,191,36,0.06)',  tension:0.4, fill:true, pointRadius:4 },
+        { label:'Negative', data:[22,21,20,19,18,16], borderColor:'#F87171', backgroundColor:'rgba(248,113,113,0.06)', tension:0.4, fill:true, pointRadius:4 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales: {
+        x: { grid:CHART_DEFAULTS.grid, ticks:CHART_DEFAULTS.ticks },
+        y: { grid:CHART_DEFAULTS.grid, ticks:{...CHART_DEFAULTS.ticks,callback:v=>v+'%'}, min:0, max:100 }
+      },
+      plugins: { legend:{ display:true, labels:{ color:'#8A96B0',font:{family:'DM Sans',size:11},boxWidth:10 } }, tooltip:CHART_DEFAULTS.tooltip }
+    }
+  });
+
+  new Chart(document.getElementById('chart-dept-bar'), {
+    type: 'bar',
+    data: {
+      labels: ['CSE','ECE','AI/ML','IT'],
+      datasets: [
+        { label:'Positive', data:[68,78,88,74], backgroundColor:'rgba(52,211,153,0.75)', borderRadius:5 },
+        { label:'Neutral',  data:[10,8,5,12],   backgroundColor:'rgba(251,191,36,0.65)',  borderRadius:5 },
+        { label:'Negative', data:[22,14,7,14],  backgroundColor:'rgba(248,113,113,0.75)', borderRadius:5 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales: {
+        x: { grid:CHART_DEFAULTS.grid, ticks:CHART_DEFAULTS.ticks },
+        y: { grid:CHART_DEFAULTS.grid, ticks:{...CHART_DEFAULTS.ticks,callback:v=>v+'%'}, min:0, max:100 }
+      },
+      plugins: { legend:{display:true,labels:{color:'#8A96B0',font:{family:'DM Sans',size:11},boxWidth:10}}, tooltip:CHART_DEFAULTS.tooltip }
+    }
+  });
+}
+
+/* ─── TOPIC CHARTS ─── */
+function initTopicCharts() {
+  new Chart(document.getElementById('chart-donut-topics'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Teaching Quality','Assignments','Exam Difficulty','Lab Facilities','Others'],
+      datasets: [{ data:[42,25,18,10,5], backgroundColor:['#4F8EF7','#F87171','#FBBF24','#A78BFA','#2DD4BF'], borderWidth:0, hoverOffset:10 }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, cutout:'60%',
+      plugins: { legend:{ display:true, position:'right', labels:{ color:'#8A96B0', font:{family:'DM Sans',size:11}, boxWidth:10, padding:12 } }, tooltip:CHART_DEFAULTS.tooltip }
+    }
+  });
+}
+
+/* ─── WORD CLOUD ─── */
+function buildWordCloud() {
+  const words = [
+    { text:'good explanation',  size:28, color:'#34D399' },
+    { text:'lab equipment',     size:24, color:'#F87171' },
+    { text:'too much assignment',size:22,color:'#F87171' },
+    { text:'slow teaching',     size:20, color:'#FBBF24' },
+    { text:'practical sessions',size:26, color:'#4F8EF7' },
+    { text:'exam difficult',    size:18, color:'#FBBF24' },
+    { text:'more examples',     size:16, color:'#34D399' },
+    { text:'interactive',       size:22, color:'#34D399' },
+    { text:'not working',       size:20, color:'#F87171' },
+    { text:'great faculty',     size:24, color:'#4F8EF7' },
+    { text:'confusing',         size:16, color:'#F87171' },
+    { text:'engaging',          size:18, color:'#34D399' },
+    { text:'deadline',          size:15, color:'#FBBF24' },
+    { text:'attendance',        size:14, color:'#8A96B0' },
+    { text:'syllabus',          size:15, color:'#8A96B0' },
+    { text:'helpful',           size:20, color:'#34D399' },
+    { text:'boring',            size:16, color:'#F87171' },
+    { text:'excellent',         size:22, color:'#34D399' },
+    { text:'communication',     size:18, color:'#A78BFA' },
+    { text:'feedback',          size:14, color:'#2DD4BF' },
+  ];
+  const cloud = document.getElementById('word-cloud');
+  cloud.innerHTML = '';
+  words.forEach((w, i) => {
+    const span = document.createElement('span');
+    span.className = 'wc-word';
+    span.textContent = w.text;
+    span.style.fontSize = w.size + 'px';
+    span.style.color = w.color;
+    span.style.animationDelay = (i * 0.05) + 's';
+    cloud.appendChild(span);
+  });
+}
+
+/* ─── FACULTY CHARTS ─── */
+function initFacultyCharts() {
+  new Chart(document.getElementById('chart-faculty-bar'), {
+    type: 'bar',
+    data: {
+      labels: ['Dr. R. Patel','Prof. V. Singh','Dr. S. Kumar','Prof. A. Nair','Dr. P. Reddy','Dr. M. Sharma','Prof. K. Iyer'],
+      datasets: [
+        { label:'Avg Rating', data:[4.8,4.6,4.3,4.1,4.2,3.2,2.4], backgroundColor: ctx => {
+            const v = ctx.dataset.data[ctx.dataIndex];
+            return v >= 4 ? 'rgba(52,211,153,0.75)' : v >= 3 ? 'rgba(251,191,36,0.75)' : 'rgba(248,113,113,0.75)';
+          }, borderRadius:6 }
+      ]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      scales: {
+        x: { grid:CHART_DEFAULTS.grid, ticks:{...CHART_DEFAULTS.ticks,callback:v=>v+'★'}, min:0, max:5 },
+        y: { grid:{...CHART_DEFAULTS.grid,drawOnChartArea:false}, ticks:{...CHART_DEFAULTS.ticks,font:{family:'DM Sans',size:11}} }
+      },
+      plugins: { legend:{display:false}, tooltip:CHART_DEFAULTS.tooltip }
+    }
+  });
+}
+
+/* ─── AI CHARTS ─── */
+function initAICharts() {
+  const months = ['Aug','Sep','Oct','Nov','Dec','Jan'];
+  new Chart(document.getElementById('chart-ai-trend'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        { label:'Sentiment Score', data:[62,65,67,70,72,75], borderColor:'#4F8EF7', backgroundColor:'rgba(79,142,247,0.1)', tension:0.4, fill:true, pointRadius:5, pointHoverRadius:7, pointBackgroundColor:'#4F8EF7', borderWidth:2 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales: {
+        x: { grid:CHART_DEFAULTS.grid, ticks:CHART_DEFAULTS.ticks },
+        y: { grid:CHART_DEFAULTS.grid, ticks:{...CHART_DEFAULTS.ticks,callback:v=>v+'%'}, min:50, max:90 }
+      },
+      plugins: { legend:{display:false}, tooltip:CHART_DEFAULTS.tooltip }
+    }
+  });
+}
+
+/* ════════════════════════════════════════ CHIP TOGGLE ═══════ */
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    const siblings = this.parentElement.querySelectorAll('.chip');
+    siblings.forEach(s => s.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+/* ════════════════════════════════════════ INIT ═══════ */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    initPageCharts('home');
+  }, 2000);
+});
+</script>
+</body>
+</html>
