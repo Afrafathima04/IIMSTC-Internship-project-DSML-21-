@@ -1,179 +1,91 @@
-# IIMSTC-Internship-project-DSML-21-
-Title: Ed-Feed — AI-Driven Student Feedback Analysis & Insight Generation System
+ED-FEED: AI-Driven Intelligent Student Feedback Analysis and Insight Generation System
+IIMSTC DSML Internship — Cohort 21 | Industry Internship Project Report
 
-> Real-time NLP pipeline that transforms raw student feedback into structured sentiment insights and actionable recommendations for educators.
+Overview
+ED-FEED is an end-to-end AI-powered system that automates the analysis of student feedback in educational institutions. It uses Natural Language Processing (NLP) and deep learning to classify free-text feedback into Positive, Negative, and Neutral sentiments, surfacing actionable insights for educators through a real-time dashboard.
+The system addresses a critical gap in EdTech: institutions collect large volumes of qualitative feedback but lack scalable, automated tools to process it meaningfully.
 
-Overview:
+Key Features
 
-Ed-Feed is an end-to-end intelligent feedback analysis system built for higher education institutions. It collects free-text student feedback, processes it through a multi-stage NLP pipeline, and delivers live sentiment insights, topic breakdowns, and LLM-generated recommendations directly to a faculty dashboard — within seconds of submission.
+Three-class sentiment classification (Positive / Negative / Neutral) using a Bidirectional LSTM (Bi-LSTM) model
+LLM-assisted data labelling via LLaMA 3.1 8B Instant (Groq Cloud API) with zero-shot, deterministic prompts across 35,000 samples
+Privacy-first pipeline — PII anonymization using regex + spaCy NER before any model training or inference
+Real-time inference with sub-500ms latency on standard CPU hardware
+Educator dashboard with sentiment distributions, trend analysis, aspect breakdowns, and alert flagging
+Distributed training across 2× NVIDIA T4 GPUs using TensorFlow MirroredStrategy
 
-The system addresses five critical gaps identified across eight peer-reviewed studies in educational NLP:
-- No existing tool provides real-time feedback analysis
-- Generic NLP models fail on education-specific language
-- No tool combines difficulty index with sentiment for root-cause diagnosis
-- Enterprise tools are unaffordable for small institutions
-- Existing dashboards show data but generate no actionable recommendations
 
-System Architecture:
+Model Architecture
+The classifier is a Bidirectional LSTM network built in TensorFlow/Keras:
+Embedding (vocab: 20k, dim: 64)
+    → SpatialDropout1D (20%)
+    → BiLSTM (128 units, return_sequences=True)
+    → BiLSTM (64 units, return_sequences=False)
+    → Dense (64 units, ReLU) + Dropout (40%)
+    → Dense Output (3 units, Softmax)
+Test Set Performance (35,421 balanced samples):
+MetricValueOverall Accuracy84%Macro F1 Score0.84Negative Recall0.90Positive Precision0.88
 
-Student Feedback (Web / Mobile)
-        ↓
-   REST API / WebSocket  (FastAPI)
-        ↓
-   Redis Queue + Celery Workers
-        ↓
-┌──────────────────────────────────────┐
-│         NLP Analysis Layer           │
-│  • Sentiment    → BERT / RoBERTa     │
-│  • Topics       → BERTopic / LDA     │
-│  • Keywords     → KeyBERT            │
-│  • Intent       → Zero-shot BART     │
-└──────────────────────────────────────┘
-        ↓
-   LLM Insight Engine  (Gemini 1.5 Flash / Claude Haiku)
-        ↓
-   Real-Time Faculty Dashboard  (React + Chart.js)
+Pipeline Stages
 
- Key Features:
+Data Ingestion — Feedback collected via web forms / LMS integrations, tagged with course/instructor/semester metadata
+PII Anonymization — Regex + spaCy NER removes names, emails, phone numbers, IDs
+Text Preprocessing — Lowercasing, tokenization, stop word removal, Porter stemming
+LLM Re-Labelling — LLaMA 3.1 8B via Groq API; temperature 0.0 for deterministic labels; CSV caching to avoid redundant calls
+Vectorization — TensorFlow TextVectorization: 20k-token vocab, padded/truncated to 100 tokens
+Model Training — Bi-LSTM with Early Stopping, Model Checkpointing, ReduceLROnPlateau callbacks
+Real-Time Inference — Saved checkpoint serves predictions; <500ms per comment on CPU
+Dashboard Visualization — Sentiment pie charts, trend lines, aspect breakdowns, flagged items
 
-- Real-time pipeline — feedback analysed within 500ms of submission
-- Aspect-based sentiment analysis (ABSA)— separate scores for teaching quality, course content, assignments, exams, and platform
-- Difficulty-Sentiment Matrix — distinguishes course difficulty issues from teaching quality issues
-- LLM-generated summaries — auto-produces human-readable insight cards and alert narratives for faculty
-- Live dashboard — sentiment trend charts, word clouds, topic breakdowns, and threshold-based alerts
-- Anonymous by design— PII stripped at ingestion via spaCy NER before any storage
 
-NLP Models:
+Tech Stack
+CategoryTechnologyLanguagePythonDeep LearningTensorFlow / KerasNLPspaCy, NLTKML Utilitiesscikit-learnLLM Re-LabellingGroq Cloud API + LLaMA 3.1 8BData Handlingpandas, NumPyVisualizationMatplotlib, SeabornDashboardReact / FlaskTraining PlatformKaggle Notebooks (2× NVIDIA T4)Version ControlGit / GitHub
 
-| Model | Purpose | Expected Performance |
-| RoBERTa (fine-tuned) | Primary aspect-level sentiment classifier | Accuracy 88–94%, F1 > 85% |
-| BERT (fine-tuned) | Core sentiment classification | High accuracy, strong baseline |
-| DistilBERT | Real-time low-latency inference | 97% of BERT performance, 40% faster |
-| BERTopic | Theme and topic extraction | Coherence score Cv ≥ 0.55 |
-| LDA | Large-corpus topic modelling | Used with 1000+ feedback records |
-| KeyBERT | Keyword and key-phrase extraction | Powers word cloud and tagging |
-| VADER / SentiStrength | Lightweight lexicon baseline | Accuracy ~75–80%, instant inference |
-| facebook/bart-large-mnli | Zero-shot intent classification | No training data required |
+Hardware Requirements
+Training:
 
-LLM Integration:
+GPU: 2× NVIDIA Tesla T4 (16 GB VRAM each)
+RAM: 16 GB minimum (32 GB recommended)
+Storage: 50 GB SSD
 
-LLMs act as the **last-mile insight layer** — they receive aggregated NLP outputs and generate natural language summaries and alerts for the dashboard.
+Inference / Deployment:
 
-| LLM | Role |
-| Gemini 1.5 Flash | Primary — real-time streaming summaries (1M token context) |
-| Claude Haiku | Structured JSON insight generation, alert drafting |
-| GPT-4o mini | High-quality summary fallback |
-| Llama 3.1 8B (local) | Privacy-first on-premise deployment option |
-| Mistral 7B (local) | Budget-friendly college server deployment |
+CPU only (no GPU required)
+RAM: 8 GB minimum
+Storage: 10 GB SSD
 
-Dataset:
 
-Primary:RateMyProfessor sample dataset — 20,000 records, 51 features
+Results Summary
+The Bi-LSTM model achieves 84% accuracy on a balanced 3-class test set (11,807 samples per class), with consistent F1 scores across all sentiment classes. The Negative class achieves the highest recall (0.90), making the system particularly sensitive to dissatisfied student responses — the most operationally critical signal in a deployment context. The primary challenge is the Neutral–Positive boundary, a limitation consistent with findings across the sentiment analysis literature.
 
-| Feature | Type | Purpose |
-| `comments` | Text | Core NLP input — free-text reviews |
-| `star_rating` | Numeric | Overall satisfaction score |
-| `diff_index` | Numeric | Course difficulty perception |
-| `would_take_again` | Boolean | Teaching effectiveness indicator |
-| `department_name` | Categorical | Department-level pattern analysis |
-| `tags` | Categorical | Structured teaching attribute labels |
+Limitations
 
-Secondary sources used for benchmarking:
-- Coursera course review dataset (P3, P4 in literature review)
-- SemEval ABSA dataset (restaurant and laptop domains — P5)
-- Synthetic augmentation via LLM paraphrasing where data is scarce
+Neutral class ambiguity remains the hardest classification challenge
+No explainability mechanism (black-box predictions)
+English-only; no multilingual support
+Trained on online platform data (RateMyProfessor, Coursera, Waterloo, Exeter) — may not generalize to all institution types without fine-tuning
+Batch processing only; no true real-time streaming yet
 
-Tech Stack:
 
-| Layer | Technologies |
-| Backend | Python, FastAPI, Celery, Redis, PostgreSQL, SQLAlchemy |
-| NLP / ML | PyTorch, HuggingFace Transformers, spaCy, NLTK, BERTopic, KeyBERT, ONNX |
-| LLM APIs | Gemini API, Anthropic API, Ollama (local), LangChain |
-| Frontend | React.js, Chart.js, Recharts, Socket.io, TailwindCSS |
-| Deployment | Docker, AWS / GCP, GitHub Actions (CI/CD) |
+Future Work
 
-Getting Started:
+Fine-tune BERT / RoBERTa / EduBERT on the labelled corpus
+Add Explainable AI (LIME, SHAP, attention visualization)
+Aspect-level sentiment analysis (teaching quality, assignment difficulty, infrastructure, etc.)
+Multilingual support (mBERT / XLM-RoBERTa for Hindi, Tamil, Telugu, etc.)
+Real-time streaming pipeline (Apache Kafka + TensorFlow Serving / ONNX Runtime)
+LLM-generated personalized educator recommendations
 
-Prerequisites:
-Python 3.10+
-Node.js 18+
-Redis
-PostgreSQL
 
-Installation:
-# Clone the repository
-git clone https://github.com/your-username/ed-feed.git
-cd ed-feed
+References
+Full references are listed in the project report. Key tools and frameworks:
 
-# Backend setup
-pip install -r requirements.txt
+TensorFlow / Keras
+spaCy / NLTK
+Groq API + LLaMA (Meta AI)
+scikit-learn / pandas / NumPy
+Seaborn / Matplotlib
+Kaggle / GitHub
 
-# Frontend setup
-cd dashboard
-npm install
 
-# Environment variables
-cp .env.example .env
-
-# Add your Gemini API key, Anthropic API key, DB credentials
-Run locally
-
-# Start Redis
-redis-server
-
-# Start Celery worker
-celery -A app.worker worker --loglevel=info
-
-# Start FastAPI backend
-uvicorn app.main:app --reload
-
-# Start React dashboard
-cd dashboard && npm run dev
-
-Evaluation Metrics:
-
-| Metric | Target |
-| F1-Score (Macro) | ≥ 0.85 across all sentiment classes |
-| Aspect-level F1 | Reported separately per aspect category |
-| Topic Coherence (Cv) | ≥ 0.55 for BERTopic / LDA |
-| Inter-rater reliability | κ > 0.70, Pearson r > 0.800 (aligned with Morris et al., 2025) |
-| Pipeline latency (P95) | < 500ms per feedback for real-time requirement |
-
-Literature Foundation:
-
-This system is grounded in a structured review of eight peer-reviewed papers (2021–2025):
-
-| Paper | Key Contribution |
-| Shaik et al. (2023) | Survey of ML/DL/BERT approaches in educational SA |
-| Kastrati et al. (2021) | PRISMA mapping — identified standardised dataset gap |
-| Dalipi et al. (2022) | MOOC-specific SLR — identified real-time gap |
-| Abdi et al. (2023) | DTLP model — BiLSTM + linguistic knowledge, Acc 88.78% |
-| Hua et al. (2024) | Largest ABSA SLR — confirmed education domain gap |
-| Grimalt-Álvaro & Usart (2024) | Formative assessment SA — called for teacher dashboards |
-| Deshpande et al. (2025) | ML comparison on faculty feedback — RF Acc 91% |
-| Morris et al. (2025) | Fine-tuned RoBERTa for real-time formative feedback |
-
- Roadmap:
-- System architecture design
-- Dataset selection and overview
-- Literature review and gap analysis
-- Data preprocessing pipeline
-- BERT / RoBERTa fine-tuning on education feedback
-- ABSA aspect extraction module
-- BERTopic integration
-- FastAPI backend + Redis queue
-- LLM insight generation layer
-- React faculty dashboard
-- Docker deployment
-- Model publishing on HuggingFace
-
-Future Work:
-
-- Explainable AI (XAI) methods for transparent LLM scoring decisions
-- Cross-institutional generalisation testing
-- Peer and self-assessment feedback analysis
-- EduBERT fine-tuning for deeper academic language understanding
-
-Acknowledgements:
-
-Built on research from Natural Language Processing Journal (Elsevier), Applied Sciences (MDPI), Frontiers in Education, Soft Computing (Springer), Artificial Intelligence Review (Springer), Journal of Computing in Higher Education (Springer), Advances in Continuous and Discrete Models (Springer), and International Journal of Artificial Intelligence in Education (Springer).
+IIMSTC DSML Internship, Cohort 21 — Industry Internship Project Report
